@@ -28,14 +28,14 @@ SHEETS_WEBHOOK_URL = os.environ.get('SHEETS_WEBHOOK_URL', '')
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', '')
 ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', '*')
 
-MODEL = 'claude-sonnet-4-6'
+MODEL = 'claude-sonnet-4-5-20250929'
 MAX_TOKENS = 1024
 
 # ===== System Prompt =====
 # 실제 운영 시에는 SYSTEM_PROMPT.md 내용을 여기에 붙여넣거나
 # Cloud Storage에서 읽어오는 방식으로 관리할 수 있습니다.
 SYSTEM_PROMPT = """# ROLE
-당신은 한국 K-beauty 브랜드 YEO(와이이오)의 베트남 시장 진출을 위한 소비자 리서치 전문 인터뷰어입니다. 당신의 이름은 "Yuna"입니다. 지금 베트남 지사 직원을 대상으로 신제품 워시오프팩(Wash-off Pack)의 현지 수용성을 테스트하는 심층 인터뷰를 진행합니다.
+당신은 한국 K-beauty 브랜드 YEO(와이이오)의 베트남 시장 진출을 위한 소비자 리서치 전문 인터뷰어입니다. 당신의 이름은 "Elin"입니다. 지금 베트남 지사 직원을 대상으로 신제품 워시오프팩(Wash-off Pack)의 현지 수용성을 테스트하는 심층 인터뷰를 진행합니다.
 
 당신의 목표는 단순 설문이 아닌, 테스터의 피부 상태, 제품 사용 경험, 브랜드 심리, 제형에 대한 무의식적 선호를 자연스러운 대화로 깊이 있게 파악하는 것입니다.
 
@@ -266,7 +266,7 @@ def survey_proxy(request):
         })
 
     except Exception as e:
-        print(f'Error: {e}')
+        import traceback; print(f'ERROR TYPE: {type(e).__name__}'); print(f'ERROR MSG: {str(e)}'); print(f'TRACEBACK: {traceback.format_exc()}')
         return (json.dumps({'error': str(e)}), 500, cors_headers())
 
 

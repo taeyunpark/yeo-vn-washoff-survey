@@ -19,7 +19,7 @@ const I18N = {
     input_placeholder: "답변을 입력하세요...",
 
     // Initial Message
-    greeting: "안녕하세요! 저는 YEO의 리서치 담당 Yuna입니다. 🌿\n\n오늘 새로 출시하는 워시오프팩에 대해 10분 정도 편하게 이야기 나눠주실 수 있을까요?\n\n정답은 없고, 느낀 그대로 말씀해 주시면 됩니다. 준비되셨으면 편하게 '네' 또는 '안녕하세요'라고 답해주세요!",
+    greeting: "안녕하세요! 저는 YEO의 리서치 담당 Elin입니다. 🌿\n\n오늘 새로 출시하는 워시오프팩에 대해 10분 정도 편하게 이야기 나눠주실 수 있을까요?\n\n정답은 없고, 느낀 그대로 말씀해 주시면 됩니다. 준비되셨으면 편하게 '네' 또는 '안녕하세요'라고 답해주세요!",
 
     // Completion
     completion_title: "소중한 피드백 감사합니다!",
@@ -43,7 +43,7 @@ const I18N = {
     header_sub: "YEO Research",
     input_placeholder: "Type your answer...",
 
-    greeting: "Hello! I'm Yuna, a researcher from YEO. 🌿\n\nCould we chat for about 10 minutes about our new Wash-off Pack that's launching soon?\n\nThere are no right or wrong answers — just share your honest impressions. When you're ready, just say 'Hi' or 'Yes'!",
+    greeting: "Hello! I'm Elin, a researcher from YEO. 🌿\n\nCould we chat for about 10 minutes about our new Wash-off Pack that's launching soon?\n\nThere are no right or wrong answers — just share your honest impressions. When you're ready, just say 'Hi' or 'Yes'!",
 
     completion_title: "Thank you for your valuable feedback!",
     completion_message: "Your insights will help us create<br>a better product for the Vietnamese market.",
@@ -65,7 +65,7 @@ const I18N = {
     header_sub: "YEO Research",
     input_placeholder: "Nhập câu trả lời của bạn...",
 
-    greeting: "Xin chào! Tôi là Yuna, nghiên cứu viên của YEO. 🌿\n\nBạn có thể dành khoảng 10 phút để trò chuyện cùng tôi về sản phẩm mặt nạ rửa trôi sắp ra mắt không?\n\nKhông có câu trả lời đúng sai — chỉ cần chia sẻ cảm nhận thật của bạn. Khi bạn đã sẵn sàng, chỉ cần nói 'Chào' hoặc 'Vâng' nhé!",
+    greeting: "Xin chào! Tôi là Elin, nghiên cứu viên của YEO. 🌿\n\nBạn có thể dành khoảng 10 phút để trò chuyện cùng tôi về sản phẩm mặt nạ rửa trôi sắp ra mắt không?\n\nKhông có câu trả lời đúng sai — chỉ cần chia sẻ cảm nhận thật của bạn. Khi bạn đã sẵn sàng, chỉ cần nói 'Chào' hoặc 'Vâng' nhé!",
 
     completion_title: "Cảm ơn phản hồi quý giá của bạn!",
     completion_message: "Ý kiến của bạn sẽ giúp chúng tôi tạo ra<br>sản phẩm tốt hơn cho thị trường Việt Nam.",
