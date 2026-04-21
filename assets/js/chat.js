@@ -1,6 +1,6 @@
 /**
- * YEO × GOOKIN VN Wash-off Survey — chat.js v2.2
- * 3-Screen 구조 + 중복 바인딩 방지
+ * YEO × GOOKIN VN Wash-off Survey — chat.js v2.3
+ * v2.2 + IME(한글 조합) 버그 수정
  */
 
 if (window.__YEO_CHAT_LOADED__) {
@@ -20,6 +20,7 @@ if (window.__YEO_CHAT_LOADED__) {
     let isCompleted = false;
     let isSending = false;
     let initDone = false;
+    let isComposing = false;
 
     let welcomeScreen, chatScreen, completionScreen;
     let chatMessages, typingIndicator, inputField, sendBtn;
@@ -80,13 +81,20 @@ if (window.__YEO_CHAT_LOADED__) {
       }
 
       if (inputField) {
+        inputField.addEventListener('compositionstart', function () {
+          isComposing = true;
+        });
+        inputField.addEventListener('compositionend', function () {
+          isComposing = false;
+        });
+
         inputField.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter' && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey && !isComposing && !e.isComposing && e.keyCode !== 229) {
             e.preventDefault();
-            e.stopPropagation();
             handleSend();
           }
         });
+
         inputField.addEventListener('input', function () {
           inputField.style.height = 'auto';
           inputField.style.height = Math.min(inputField.scrollHeight, 120) + 'px';
@@ -166,14 +174,18 @@ if (window.__YEO_CHAT_LOADED__) {
 
     async function handleSend() {
       if (isSending || isCompleted) return;
+      if (isComposing) return;
+
       const text = inputField.value.trim();
       if (!text) return;
 
       isSending = true;
       sendBtn.disabled = true;
 
-      inputField.value = '';
-      inputField.style.height = 'auto';
+      setTimeout(function () {
+        inputField.value = '';
+        inputField.style.height = 'auto';
+      }, 50);
 
       appendMessage('user', text);
       messages.push({ role: 'user', content: text });
