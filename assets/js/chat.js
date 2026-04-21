@@ -1,317 +1,166 @@
 /**
- * chat.js — YEO VN Wash-off Survey Chatbot
- * 
- * Core logic for conversation management, API calls, and UI updates.
+ * YEO × GOOKIN VN Wash-off Survey — chat.js v2.0
  */
 
-// ===== State =====
-let conversationHistory = [];
-let testerID = null;
-let interviewStarted = false;
-let interviewCompleted = false;
-let startTime = null;
+(function () {
+  'use strict';
 
-// ===== DOM Elements =====
-const $ = (sel) => document.querySelector(sel);
-const welcomeScreen = $('#welcome-screen');
-const chatScreen = $('#chat-screen');
-const completionScreen = $('#completion-screen');
-const chatMessages = $('#chat-messages');
-const userInput = $('#user-input');
-const sendBtn = $('#send-btn');
-const startBtn = $('#start-btn');
-const typingIndicator = $('#typing-indicator');
-const testerIdDisplay = $('#tester-id-display');
+  const ENDPOINT = window.CONFIG?.ENDPOINT || 'https://survey-proxy-eh3r7dgeaq-du.a.run.app';
+  const messages = [];
+  let currentLang = detectLanguage();
+  let sessionId = generateSessionId();
+  let isCompleted = false;
 
-// ===== Utility =====
+  const chatWindow = document.getElementById('chat-window');
+  const inputField = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
+  const headerTitle = document.getElementById('header-title');
+  const headerSubtitle = document.getElementById('header-subtitle');
+  const langBadge = document.getElementById('lang-badge');
+  const preLaunchBadge = document.getElementById('pre-launch-notice');
 
-/**
- * Tester ID 생성 (VN-T-XXXX)
- */
-function generateTesterID() {
-  const timestamp = Date.now().toString(36).toUpperCase().slice(-4);
-  return `VN-T-${timestamp}`;
-}
-
-/**
- * 랜덤 지연 (타이핑 연출용)
- */
-function randomDelay(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-/**
- * JSON 태그 제거 (응답자에게 노출 방지)
- */
-function cleanMessage(text) {
-  // <FINAL_JSON>...</FINAL_JSON> 태그와 내부 내용 제거
-  return text.replace(/<FINAL_JSON>[\s\S]*?<\/FINAL_JSON>/g, '').trim();
-}
-
-/**
- * Final JSON 추출
- */
-function extractFinalJSON(text) {
-  const match = text.match(/<FINAL_JSON>([\s\S]*?)<\/FINAL_JSON>/);
-  if (!match) return null;
-  try {
-    return JSON.parse(match[1].trim());
-  } catch (e) {
-    console.error('JSON parse error:', e);
-    return null;
-  }
-}
-
-// ===== UI Functions =====
-
-/**
- * 메시지 추가 (사용자 or 봇)
- */
-function addMessage(text, sender = 'bot') {
-  const cleanText = sender === 'bot' ? cleanMessage(text) : text;
-  if (!cleanText) return;
-
-  const msgDiv = document.createElement('div');
-  msgDiv.className = `message ${sender}`;
-
-  if (sender === 'bot') {
-    msgDiv.innerHTML = `
-      <div class="message-avatar">Y</div>
-      <div class="message-bubble">${escapeHtml(cleanText)}</div>
-    `;
-  } else {
-    msgDiv.innerHTML = `
-      <div class="message-bubble">${escapeHtml(cleanText)}</div>
-    `;
+  function init() {
+    const i18n = getI18n(currentLang);
+    if (headerTitle) headerTitle.textContent = i18n.header_title;
+    if (headerSubtitle) headerSubtitle.textContent = i18n.header_subtitle;
+    if (langBadge) langBadge.textContent = i18n.language_badge;
+    if (preLaunchBadge) preLaunchBadge.textContent = i18n.pre_launch_notice;
+    if (inputField) inputField.placeholder = i18n.placeholder;
+    if (sendBtn) sendBtn.textContent = i18n.send_button;
+    renderGreeting();
+    bindEvents();
   }
 
-  chatMessages.appendChild(msgDiv);
-  scrollToBottom();
-}
-
-/**
- * XSS 방지 HTML 이스케이프 (줄바꿈은 유지)
- */
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML.replace(/\n/g, '<br>');
-}
-
-/**
- * 채팅 영역 스크롤
- */
-function scrollToBottom() {
-  requestAnimationFrame(() => {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
-}
-
-/**
- * 타이핑 인디케이터 표시/숨김
- */
-function showTyping() {
-  typingIndicator.classList.remove('hidden');
-  chatScreen.appendChild(typingIndicator);
-  scrollToBottom();
-}
-
-function hideTyping() {
-  typingIndicator.classList.add('hidden');
-}
-
-/**
- * 입력 활성화/비활성화
- */
-function setInputEnabled(enabled) {
-  userInput.disabled = !enabled;
-  sendBtn.disabled = !enabled;
-  if (enabled) userInput.focus();
-}
-
-/**
- * Textarea 자동 리사이즈
- */
-function autoResize() {
-  userInput.style.height = 'auto';
-  userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
-}
-
-// ===== Interview Flow =====
-
-/**
- * 인터뷰 시작
- */
-function startInterview() {
-  testerID = generateTesterID();
-  testerIdDisplay.textContent = testerID;
-  startTime = Date.now();
-  interviewStarted = true;
-
-  welcomeScreen.classList.add('hidden');
-  chatScreen.classList.remove('hidden');
-
-  // 첫 인사 메시지 (i18n에서)
-  setTimeout(() => {
-    addMessage(t('greeting'), 'bot');
-    setInputEnabled(true);
-  }, 400);
-}
-
-/**
- * 인터뷰 완료
- */
-function completeInterview(finalJSON) {
-  interviewCompleted = true;
-  setInputEnabled(false);
-
-  // 최종 데이터 전송 (Sheets + Slack은 Cloud Function이 처리)
-  if (CONFIG.DEBUG) {
-    console.log('Final JSON:', finalJSON);
+  function generateSessionId() {
+    const ts = new Date().toISOString().replace(/[-:.TZ]/g, '').substring(0, 14);
+    const rand = Math.random().toString(36).substring(2, 8);
+    return `sess_${ts}_${rand}`;
   }
 
-  // 2초 후 완료 화면 전환
-  setTimeout(() => {
-    chatScreen.classList.add('hidden');
-    completionScreen.classList.remove('hidden');
-  }, 2500);
-}
-
-/**
- * 사용자 메시지 전송
- */
-async function sendUserMessage() {
-  const text = userInput.value.trim();
-  if (!text || interviewCompleted) return;
-
-  // UI 업데이트
-  addMessage(text, 'user');
-  userInput.value = '';
-  autoResize();
-  setInputEnabled(false);
-
-  // 히스토리에 추가
-  conversationHistory.push({
-    role: 'user',
-    content: text
-  });
-
-  // 타이핑 표시
-  showTyping();
-
-  try {
-    // API 호출
-    const response = await callClaudeAPI();
-    hideTyping();
-
-    // 응답 처리
-    const reply = response.reply || '';
-    const finalJSON = extractFinalJSON(reply);
-    const cleanReply = cleanMessage(reply);
-
-    if (cleanReply) {
-      addMessage(cleanReply, 'bot');
-    }
-
-    // 히스토리 저장 (원본 그대로 - JSON 태그 포함한 채로 서버 저장용)
-    conversationHistory.push({
-      role: 'assistant',
-      content: reply
-    });
-
-    // 인터뷰 완료 감지
-    if (finalJSON || response.interview_complete) {
-      completeInterview(finalJSON);
-    } else {
-      setInputEnabled(true);
-    }
-
-  } catch (err) {
-    hideTyping();
-    console.error('Error:', err);
-
-    const errorMsg = err.message === 'timeout' 
-      ? t('error_network')
-      : t('error_server');
-
-    addMessage(errorMsg, 'bot');
-    setInputEnabled(true);
+  function renderGreeting() {
+    const i18n = getI18n(currentLang);
+    appendMessage('assistant', i18n.greeting, true);
   }
-}
 
-/**
- * Cloud Function 호출
- */
-async function callClaudeAPI() {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT);
-
-  const duration = Math.floor((Date.now() - startTime) / 60000);
-
-  try {
-    const response = await fetch(CONFIG.ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        tester_id: testerID,
-        messages: conversationHistory,
-        language: currentLang,
-        duration_min: duration,
-        meta: {
-          project: CONFIG.PROJECT,
-          version: CONFIG.VERSION
+  function bindEvents() {
+    if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+    if (inputField) {
+      inputField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
         }
-      }),
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      });
     }
-
-    return await response.json();
-
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err.name === 'AbortError') {
-      throw new Error('timeout');
-    }
-    throw err;
   }
-}
 
-// ===== Event Listeners =====
+  async function sendMessage() {
+    if (isCompleted) return;
+    const text = inputField.value.trim();
+    if (!text) return;
 
-document.addEventListener('DOMContentLoaded', () => {
-  // 시작 버튼
-  startBtn?.addEventListener('click', startInterview);
+    appendMessage('user', text);
+    messages.push({ role: 'user', content: text });
+    inputField.value = '';
+    sendBtn.disabled = true;
 
-  // 전송 버튼
-  sendBtn?.addEventListener('click', sendUserMessage);
-
-  // Enter 키 (Shift+Enter는 줄바꿈)
-  userInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendUserMessage();
+    if (messages.filter(m => m.role === 'user').length === 1) {
+      if (/[가-힣]/.test(text)) currentLang = 'ko';
+      else if (/[ăâêôơưđà-ỹ]/i.test(text)) currentLang = 'vi';
     }
-  });
 
-  // Textarea 자동 리사이즈
-  userInput?.addEventListener('input', autoResize);
+    showTyping();
 
-  // 페이지 나가기 전 경고 (인터뷰 중일 때)
-  window.addEventListener('beforeunload', (e) => {
-    if (interviewStarted && !interviewCompleted) {
-      e.preventDefault();
-      e.returnValue = '';
+    try {
+      const resp = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          messages: messages
+        })
+      });
+
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+
+      hideTyping();
+
+      let msg = data.message || '';
+      msg = msg.replace(/<FINAL_JSON>[\s\S]*?<\/FINAL_JSON>/gi, '').trim();
+
+      appendMessage('assistant', msg);
+      messages.push({ role: 'assistant', content: msg });
+
+      if (data.completed) {
+        isCompleted = true;
+        showCompletionBadge();
+      }
+    } catch (err) {
+      hideTyping();
+      appendMessage('assistant', `⚠️ 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요. (${err.message})`, false, true);
+    } finally {
+      sendBtn.disabled = false;
+      if (inputField) inputField.focus();
     }
-  });
+  }
 
-  // 초기 입력 비활성화
-  setInputEnabled(false);
-});
+  function appendMessage(role, content, isHTML = false, isError = false) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message message--${role}` + (isError ? ' message--error' : '');
+
+    if (role === 'assistant') {
+      const i18n = getI18n(currentLang);
+      const avatar = document.createElement('div');
+      avatar.className = 'message__avatar';
+      avatar.textContent = i18n.avatar_letter;
+      msgDiv.appendChild(avatar);
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'message__bubble';
+    if (isHTML) {
+      bubble.innerHTML = content;
+    } else {
+      bubble.textContent = content;
+    }
+    msgDiv.appendChild(bubble);
+
+    chatWindow.appendChild(msgDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  function showTyping() {
+    const i18n = getI18n(currentLang);
+    const typing = document.createElement('div');
+    typing.id = 'typing-indicator';
+    typing.className = 'message message--assistant message--typing';
+    typing.innerHTML = `
+      <div class="message__avatar">${i18n.avatar_letter}</div>
+      <div class="message__bubble"><em>${i18n.typing}</em></div>
+    `;
+    chatWindow.appendChild(typing);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  function hideTyping() {
+    const t = document.getElementById('typing-indicator');
+    if (t) t.remove();
+  }
+
+  function showCompletionBadge() {
+    const badge = document.createElement('div');
+    badge.className = 'completion-badge';
+    badge.innerHTML = '✅ 인터뷰가 완료되었습니다. 소중한 의견 감사합니다!';
+    chatWindow.appendChild(badge);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+    if (inputField) inputField.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
