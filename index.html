@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="GOOKIN Wash-off Pack Pre-Launch Research">
+  <title>GOOKIN × YEO Research</title>
+  <link rel="stylesheet" href="assets/css/chat.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* v2.4 추가 스타일 */
+    .notice-box {
+      background: #FFF8E1;
+      border-left: 4px solid #FFA726;
+      padding: 16px 18px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #424242;
+      text-align: left;
+    }
+    .notice-box h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #E65100;
+      margin: 0 0 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .notice-box ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .notice-box li {
+      margin-bottom: 6px;
+    }
+    .notice-box strong {
+      color: #BF360C;
+    }
+
+    /* Summary Card */
+    .summary-card {
+      background: linear-gradient(135deg, #FAFAFA 0%, #F3E5F5 100%);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 20px 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      text-align: left;
+    }
+    .summary-card h3 {
+      font-size: 16px;
+      color: #4A148C;
+      margin: 0 0 8px 0;
+      font-weight: 700;
+    }
+    .summary-card .section {
+      margin: 18px 0;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 8px;
+    }
+    .summary-card .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6A1B9A;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .summary-card .section-content {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+    }
+    .summary-card .skin-insight {
+      background: #FFF3E0;
+      border-left: 3px solid #FF7043;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin: 8px 0;
+      font-size: 13px;
+      color: #5D4037;
+      line-height: 1.5;
+    }
+    .summary-card .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 0;
+      font-size: 13px;
+    }
+    .summary-card .bar-label {
+      min-width: 64px;
+      color: #555;
+    }
+    .summary-card .bar-track {
+      flex: 1;
+      height: 8px;
+      background: #E0E0E0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .summary-card .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #9C27B0 0%, #CE93D8 100%);
+      border-radius: 4px;
+    }
+    .summary-card .bar-value {
+      min-width: 38px;
+      text-align: right;
+      color: #333;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .summary-card .priority-list {
+      margin: 0;
+      padding-left: 0;
+      list-style: none;
+    }
+    .summary-card .priority-list li {
+      padding: 6px 0;
+      font-size: 13px;
+      color: #333;
+    }
+    .summary-card .priority-list li::before {
+      content: attr(data-rank) '  ';
+      font-weight: 700;
+      color: #9C27B0;
+    }
+    .summary-card .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .summary-card .tag {
+      background: #F3E5F5;
+      color: #6A1B9A;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .summary-card .tag.deal-breaker {
+      background: #FFEBEE;
+      color: #C62828;
+    }
+    .summary-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .summary-actions button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .summary-actions .btn-primary {
+      background: #9C27B0;
+      color: white;
+    }
+    .summary-actions .btn-secondary {
+      background: #E0E0E0;
+      color: #333;
+    }
+    .summary-actions button:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <!-- Welcome Screen -->
+  <div id="welcome-screen" class="welcome-screen">
+    <div class="welcome-container">
+      <div class="welcome-logo">
+        <div class="logo-mark">GOOKIN</div>
+        <div class="logo-sub">× YEO Research</div>
+      </div>
+
+      <h1 class="welcome-title">
+        <span data-i18n="welcome_title_line1">구킨(GOOKIN) 워시오프팩</span><br>
+        <span data-i18n="welcome_title_line2">개발 단계 사전 인터뷰</span>
+      </h1>
+
+      <p class="welcome-description" data-i18n="welcome_description">
+        ⚠️ <strong>출시 전 개발 단계 샘플</strong>에 대한 의견을 듣고자 합니다.<br>
+        여러분의 의견이 실제 최종 제품에 직접 반영됩니다.<br>
+        약 10분 정도의 대화형 인터뷰입니다.
+      </p>
+
+      <!-- v2.4 — 완주 안내문 -->
+      <div class="notice-box">
+        <h3 data-i18n="notice_title">📌 인터뷰 참여 안내</h3>
+        <ul>
+          <li data-i18n="notice_duration">본 인터뷰는 약 10분 내외 소요됩니다.</li>
+          <li data-i18n="notice_completion"><strong>끝까지 완료하신 경우에만</strong> 응답 데이터가 최종 리서치 리포트에 반영됩니다.</li>
+          <li data-i18n="notice_partial">중간에 종료하시는 경우 일부 응답은 저장되나, 분석에 포함되지 않을 수 있습니다.</li>
+          <li data-i18n="notice_value">여러분의 의견이 GOOKIN의 베트남 시장 진출에 직접 반영되니, 끝까지 함께해주시기를 정중히 부탁드립니다. 🙏</li>
+          <li data-i18n="notice_privacy">모든 응답은 익명 처리되며, 제품 개발 목적 외에 사용되지 않습니다.</li>
+        </ul>
+      </div>
+
+      <div class="welcome-info">
+        <div class="info-row">
+          <span class="info-icon">⏱️</span>
+          <span data-i18n="info_duration">소요 시간: 약 10분</span>
+        </div>
+        <div class="info-row">
+          <span class="info-icon">🔒</span>
+          <span data-i18n="info_privacy">응답은 익명으로 처리됩니다</span>
+        </div>
+        <div class="info-row">
+          <span class="info-icon">💬</span>
+          <span data-i18n="info_language">한국어 / English / Tiếng Việt</span>
+        </div>
+      </div>
+
+      <button id="start-btn" class="start-btn" data-i18n="start_button">
+        인터뷰 시작하기
+      </button>
+
+      <div class="language-select">
+        <button class="lang-btn active" data-lang="ko">한국어</button>
+        <button class="lang-btn" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="vi">Tiếng Việt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Screen -->
+  <div id="chat-screen" class="chat-screen hidden">
+    <header class="chat-header">
+      <div class="header-left">
+        <div class="avatar">E</div>
+        <div class="header-info">
+          <div class="header-name">Elin (김연진)</div>
+          <div class="header-sub" data-i18n="header_sub">YEO Research</div>
+        </div>
+      </div>
+      <div class="tester-id" id="tester-id-display">VN-T-XXXX</div>
+    </header>
+
+    <main id="chat-messages" class="chat-messages">
+      <!-- 메시지가 동적으로 추가됨 -->
+    </main>
+
+    <div id="typing-indicator" class="typing-indicator hidden">
+      <div class="typing-avatar">E</div>
+      <div class="typing-bubble">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <footer class="chat-footer">
+      <div class="input-wrapper">
+        <textarea
+          id="user-input"
+          rows="1"
+          placeholder="답변을 입력하세요..."
+          data-i18n-placeholder="input_placeholder"
+        ></textarea>
+        <button id="send-btn" class="send-btn" aria-label="Send">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Completion Screen (v2.4 Summary Card) -->
+  <div id="completion-screen" class="completion-screen hidden">
+    <div class="completion-container">
+      <div class="completion-icon">✨</div>
+      <h2 class="completion-title" data-i18n="completion_title">
+        소중한 피드백 감사합니다!
+      </h2>
+
+      <!-- Summary Card (동적으로 채워짐) -->
+      <div id="summary-card-container"></div>
+
+      <div class="summary-actions">
+        <button id="download-summary-btn" class="btn-primary" data-i18n="download_summary">
+          📥 요약본 저장
+        </button>
+        <button id="close-btn" class="btn-secondary" data-i18n="close_btn">
+          닫기
+        </button>
+      </div>
+
+      <div class="completion-footer" style="margin-top: 24px;">
+        <div class="completion-logo">GOOKIN × YEO</div>
+        <div class="completion-tagline" data-i18n="completion_tagline">
+          K-Beauty, Refined for Vietnam.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="assets/js/i18n.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/chat.js"></script>
+</body>
+</html>
