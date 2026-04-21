@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="YEO Vietnam Wash-off Pack Consumer Research Survey">
+  <title>YEO Wash-off Pack Survey</title>
+  <link rel="stylesheet" href="assets/css/chat.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Welcome Screen -->
+  <div id="welcome-screen" class="welcome-screen">
+    <div class="welcome-container">
+      <div class="welcome-logo">
+        <div class="logo-mark">YEO</div>
+        <div class="logo-sub">Beauty Research</div>
+      </div>
+
+      <h1 class="welcome-title">
+        <span data-i18n="welcome_title_line1">Wash-off Pack</span><br>
+        <span data-i18n="welcome_title_line2">Tester Interview</span>
+      </h1>
+
+      <p class="welcome-description" data-i18n="welcome_description">
+        안녕하세요! 새로 출시하는 워시오프팩에 대한 솔직한 의견을 나눠주세요.<br>
+        약 10분 정도의 대화형 인터뷰입니다.
+      </p>
+
+      <div class="welcome-info">
+        <div class="info-row">
+          <span class="info-icon">⏱️</span>
+          <span data-i18n="info_duration">소요 시간: 약 10분</span>
+        </div>
+        <div class="info-row">
+          <span class="info-icon">🔒</span>
+          <span data-i18n="info_privacy">응답은 익명으로 처리됩니다</span>
+        </div>
+        <div class="info-row">
+          <span class="info-icon">💬</span>
+          <span data-i18n="info_language">한국어 / English / Tiếng Việt</span>
+        </div>
+      </div>
+
+      <button id="start-btn" class="start-btn" data-i18n="start_button">
+        인터뷰 시작하기
+      </button>
+
+      <div class="language-select">
+        <button class="lang-btn active" data-lang="ko">한국어</button>
+        <button class="lang-btn" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="vi">Tiếng Việt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Screen -->
+  <div id="chat-screen" class="chat-screen hidden">
+    <header class="chat-header">
+      <div class="header-left">
+        <div class="avatar">Y</div>
+        <div class="header-info">
+          <div class="header-name">Yuna</div>
+          <div class="header-sub" data-i18n="header_sub">YEO Research</div>
+        </div>
+      </div>
+      <div class="tester-id" id="tester-id-display">VN-T-XXXX</div>
+    </header>
+
+    <main id="chat-messages" class="chat-messages">
+      <!-- 메시지가 동적으로 추가됨 -->
+    </main>
+
+    <div id="typing-indicator" class="typing-indicator hidden">
+      <div class="typing-avatar">Y</div>
+      <div class="typing-bubble">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <footer class="chat-footer">
+      <div class="input-wrapper">
+        <textarea
+          id="user-input"
+          rows="1"
+          placeholder="답변을 입력하세요..."
+          data-i18n-placeholder="input_placeholder"
+        ></textarea>
+        <button id="send-btn" class="send-btn" aria-label="Send">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Completion Screen -->
+  <div id="completion-screen" class="completion-screen hidden">
+    <div class="completion-container">
+      <div class="completion-icon">✨</div>
+      <h2 class="completion-title" data-i18n="completion_title">
+        소중한 피드백 감사합니다!
+      </h2>
+      <p class="completion-message" data-i18n="completion_message">
+        주신 의견은 베트남 시장에 맞는 더 나은 제품을<br>
+        만드는 데 소중하게 쓰일 거예요.
+      </p>
+      <div class="completion-footer">
+        <div class="completion-logo">YEO</div>
+        <div class="completion-tagline" data-i18n="completion_tagline">
+          Beauty, Refined.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="assets/js/i18n.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/chat.js"></script>
+</body>
+</html>

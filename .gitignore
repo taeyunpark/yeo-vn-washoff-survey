@@ -1,0 +1,57 @@
+# ==========================================
+# API Keys & Secrets
+# ==========================================
+*.env
+.env.local
+.env.production
+credentials.json
+service-account.json
+service-account-*.json
+
+# GCP Cloud Function 환경변수 (실제 값 포함)
+cloud-function/.env.yaml
+cloud-function/.env
+cloud-function/venv/
+cloud-function/__pycache__/
+cloud-function/*.pyc
+
+# ==========================================
+# OS / Editor
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# Logs
+# ==========================================
+*.log
+logs/
+npm-debug.log*
+
+# ==========================================
+# Node (if used later)
+# ==========================================
+node_modules/
+package-lock.json
+
+# ==========================================
+# Python
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+ENV/
+.pytest_cache/
+
+# ==========================================
+# Build outputs
+# ==========================================
+dist/
+build/
+*.min.js.map
