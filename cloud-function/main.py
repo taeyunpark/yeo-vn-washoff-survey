@@ -83,6 +83,24 @@ SYSTEM_PROMPT = """# ROLE & IDENTITY (절대 변경 금지)
 # MISSION
 응답자의 피부 상태, 제품 사용 경험, 브랜드 심리, 제형에 대한 무의식적 선호를 자연스러운 대화로 깊이 있게 파악합니다. 응답자가 어떤 배경이든 대화를 끝까지 이어갑니다.
 
+# BRAND/PRODUCT NAME HANDLING (매우 중요 — 절대 준수)
+응답자가 언급한 브랜드명, 제품명, 성분명, 원료명은 절대 임의로 추측하거나 보완하지 마세요.
+
+❌ 절대 금지 예시:
+- "율작이요? 아, 아임프롬의 율작이군요!"
+- "OO 브랜드 맞죠? 제가 알기로는…"
+- "그건 XX사의 제품이에요"
+- 훈련 데이터에 있는 유사 브랜드로 추론해서 연결
+- 들어본 적 없는 이름을 알고 있는 척 답하는 모든 행동
+
+✅ 올바른 대응:
+- 들어본 이름이든 처음 듣는 이름이든 "말씀하신 그대로" 반복·인용
+- "율작 크림이요, 어떤 점이 좋으셨어요?" (추측 없이 질문)
+- "처음 들어보는 브랜드인데, 좀 더 알려주실 수 있을까요?"
+- 철자·발음이 애매하면 "제가 정확히 이해했는지 확인드릴게요: '율작' 맞나요?"
+
+⚠️ 원칙: 모르는 것을 아는 척 하지 않는다. 응답자의 말을 있는 그대로 기록하고 데이터로 존중한다. 사실 확인이 필요할 땐 반드시 응답자에게 되묻는다.
+
 # LANGUAGE PROTOCOL
 1. 응답자의 첫 메시지 언어를 감지하여 동일 언어로 대화합니다.
 2. 지원 언어: 한국어 / English / Tiếng Việt
@@ -283,37 +301,8 @@ def survey_proxy(request):
         final_json = extract_final_json(reply_text)
         interview_complete = final_json is not None
 
-        # ===== Conversation Log: 매 턴마다 User + Assistant 저장 =====
-        try:
-            # 마지막 User 메시지 (방금 받은 것)
-            last_user_msg = messages[-1] if messages else None
-            if last_user_msg and last_user_msg.get('role') == 'user':
-                save_turn_log({
-                    'session_id': tester_id,
-                    'turn_no': len(messages),
-                    'timestamp': datetime.utcnow().isoformat(),
-                    'role': 'user',
-                    'speaker_name': 'Tester',
-                    'language': language,
-                    'message_content': last_user_msg.get('content', ''),
-                    'token_count': len(last_user_msg.get('content', ''))
-                })
-
-            # Assistant 응답 저장 (FINAL_JSON 태그 제거한 버전)
-            clean_reply = re.sub(r'<FINAL_JSON>[\s\S]*?</FINAL_JSON>', '', reply_text).strip()
-            clean_reply = re.sub(r'<FINAL_JSON>[\s\S]*$', '', clean_reply).strip()
-            save_turn_log({
-                'session_id': tester_id,
-                'turn_no': len(messages) + 1,
-                'timestamp': datetime.utcnow().isoformat(),
-                'role': 'assistant',
-                'speaker_name': 'Elin',
-                'language': language,
-                'message_content': clean_reply,
-                'token_count': len(clean_reply)
-            })
-        except Exception as log_err:
-            print(f'Turn log error (non-blocking): {log_err}')
+        # ⚡ 응답 속도 최적화: 매 턴마다의 Turn Log 저장을 제거.
+        # 완료 시점에 전체 대화 로그를 Batch로 일괄 전송합니다 (아래 완료 블록).
 
         # ===== If complete, save to Sheets + Notify Slack =====
         if interview_complete:
@@ -323,19 +312,33 @@ def survey_proxy(request):
             final_json['duration_min'] = final_json.get('duration_min') or duration_min
             final_json['language_used'] = final_json.get('language_used') or language
 
-            # Google Sheets에 저장 (3개 이벤트: Summary + Insights + Product Spec)
+            # Google Sheets에 저장 (4개 이벤트)
             save_to_sheets(final_json)
             save_insights_deep(final_json)
             save_product_spec(final_json)
 
+            # Conversation Log: 전체 대화 Batch 저장 (완료 시 일괄 전송)
+            clean_reply_for_log = re.sub(r'<FINAL_JSON>[\s\S]*?</FINAL_JSON>', '', reply_text).strip()
+            clean_reply_for_log = re.sub(r'<FINAL_JSON>[\s\S]*$', '', clean_reply_for_log).strip()
+            save_conversation_batch(
+                tester_id=final_json['tester_id'],
+                messages=messages,
+                final_reply=clean_reply_for_log,
+                language=language
+            )
+
             # Slack 알림
             notify_slack(final_json)
+
+            # Summary Card 생성 (chat.js renderSummaryCard용)
+            final_json['summary_card'] = _build_summary_card(final_json)
 
         # Response
         response_body = {
             'reply': reply_text,  # 클라이언트가 <FINAL_JSON> 태그 제거
             'interview_complete': interview_complete,
-            'final_json': final_json if interview_complete else None
+            'final_json': final_json if interview_complete else None,
+            'summary_card': final_json.get('summary_card') if interview_complete else None
         }
 
         return (json.dumps(response_body), 200, {
@@ -507,9 +510,9 @@ def _flatten_for_summary_sheet(data):
     }
 
 
-# ===== Turn Log: 매 턴마다 대화 저장 =====
+# ===== Turn Log: 매 턴마다 대화 저장 (Legacy, 현재 미사용) =====
 def save_turn_log(turn_data):
-    """Conversation_Log 시트에 User/Assistant 턴 저장"""
+    """Conversation_Log 시트에 User/Assistant 턴 저장 (Single call)"""
     if not SHEETS_WEBHOOK_URL:
         return
     try:
@@ -518,6 +521,133 @@ def save_turn_log(turn_data):
         response.raise_for_status()
     except Exception as e:
         print(f'Turn log save failed: {e}')
+
+
+# ===== Conversation Batch: 완료 시 전체 대화 일괄 저장 =====
+def save_conversation_batch(tester_id, messages, final_reply, language):
+    """완료 시 전체 대화 히스토리를 Conversation_Log에 일괄 저장.
+    매 턴 API 호출 대신 종료 시 1회만 호출하여 응답 속도 최적화."""
+    if not SHEETS_WEBHOOK_URL:
+        return
+
+    saved_count = 0
+    try:
+        base_ts = datetime.utcnow()
+        # 모든 user/assistant 메시지 저장
+        for idx, msg in enumerate(messages, start=1):
+            role = msg.get('role', '')
+            content = msg.get('content', '')
+            if not content:
+                continue
+
+            turn_data = {
+                'session_id': tester_id,
+                'turn_no': idx,
+                'timestamp': base_ts.isoformat(),
+                'role': role,
+                'speaker_name': 'Tester' if role == 'user' else 'Elin',
+                'language': language,
+                'message_content': content,
+                'token_count': len(content)
+            }
+            try:
+                requests.post(
+                    SHEETS_WEBHOOK_URL,
+                    json={'event_type': 'turn_log', 'data': turn_data},
+                    timeout=8
+                )
+                saved_count += 1
+            except Exception:
+                pass
+
+        # 마지막 Assistant final_reply 추가
+        if final_reply:
+            last_turn = {
+                'session_id': tester_id,
+                'turn_no': len(messages) + 1,
+                'timestamp': base_ts.isoformat(),
+                'role': 'assistant',
+                'speaker_name': 'Elin',
+                'language': language,
+                'message_content': final_reply,
+                'token_count': len(final_reply)
+            }
+            try:
+                requests.post(
+                    SHEETS_WEBHOOK_URL,
+                    json={'event_type': 'turn_log', 'data': last_turn},
+                    timeout=8
+                )
+                saved_count += 1
+            except Exception:
+                pass
+
+        print(f'Conversation batch saved: {saved_count} turns for {tester_id}')
+    except Exception as e:
+        print(f'Conversation batch failed: {e}')
+
+
+# ===== Summary Card Builder: 완료 화면용 =====
+def _build_summary_card(final_json):
+    """chat.js renderSummaryCard()가 사용할 Summary Card 데이터 구성"""
+    profile = final_json.get('profile', {}) or {}
+    prod = final_json.get('product_evaluation', {}) or {}
+    com = final_json.get('commercial_signal', {}) or {}
+    open_end = final_json.get('open_end_feedback', {}) or {}
+
+    concerns = profile.get('concerns', []) or []
+    if not isinstance(concerns, list):
+        concerns = [str(concerns)]
+
+    immediate = prod.get('immediate_effect', []) or []
+    if not isinstance(immediate, list):
+        immediate = [str(immediate)]
+
+    first_imp = prod.get('first_impression_keywords', []) or []
+    if not isinstance(first_imp, list):
+        first_imp = [str(first_imp)]
+
+    age = profile.get('age_group', '')
+    gender = profile.get('gender', '')
+    location = profile.get('location', '')
+    skin = profile.get('skin_type', '')
+
+    price_vnd = com.get('acceptable_price_vnd', 0) or 0
+    try:
+        price_krw = int(int(price_vnd) / 18.7) if price_vnd else 0
+    except Exception:
+        price_krw = 0
+
+    return {
+        'profile_line': f"{age} {gender} · {location} · {skin}".strip(' ·'),
+        'persona': prod.get('texture_persona', ''),
+        'skin_insight': open_end.get('unspoken_insight', '') or prod.get('hidden_driver', ''),
+        'troubles': concerns[:3],
+        'condition_score': '',
+        'texture_spec': {
+            'viscosity': prod.get('spreadability_score', 0),
+            'spreadability': prod.get('spreadability_score', 0),
+            'adhesion': '',
+            'rinse': prod.get('water_rinse_count', 0)
+        },
+        'finish_summary': {
+            'preferred': first_imp[:3],
+            'deal_breaker': prod.get('single_improvement_request', '')
+        },
+        'scrub_summary': {
+            'wanted': prod.get('granular_tolerance', ''),
+            'reference': '',
+            'particle_um': ''
+        },
+        'scent_summary': prod.get('scent_comment', '') or '',
+        'top3_priorities': immediate[:3],
+        'commercial_summary': {
+            'price_krw': price_krw,
+            'price_vnd': price_vnd,
+            'nps': com.get('nps_score', ''),
+            'repurchase': com.get('repurchase_intent', '')
+        }
+    }
 
 
 # ===== Insights Deep: 정성 심화 저장 =====
