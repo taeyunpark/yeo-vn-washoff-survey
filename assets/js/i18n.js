@@ -14,14 +14,16 @@ const I18N = {
     send_button: '보내기',
     typing: 'Elin이 입력 중...',
     language_badge: '🇰🇷 한국어',
-    pre_launch_notice: '⚠️ 출시 전 개발 단계 샘플 의견 인터뷰',
+    pre_launch_notice: '⚠️ 신제품 개발 방향 시장 조사 인터뷰',
+    summary_loading: '고생 많으셨어요! 😊 지금 소중한 의견을 정리하고 있어요. 잠시만 기다려 주세요 ✨',
+    summary_ready: '요약본이 준비되었습니다. 여기까지가 오늘 인터뷰의 마무리입니다. 감사합니다 🙏',
 
     greeting:
       '안녕하세요! 저는 YEO의 <strong>구킨(GOOKIN) 브랜드 매니저 Elin (한국 이름: 김연진)</strong>입니다. 🌿<br><br>' +
-      '구킨은 이미 베트남에서 <strong>마스크팩을 판매 중</strong>이고, 최근에는 <strong>스킨케어 라인</strong>도 새롭게 선보이고 있어요.<br><br>' +
-      '오늘은 저희가 준비 중인 <strong>구킨 워시오프팩</strong>에 대한 의견을 듣고자 해요.<br><br>' +
-      '⚠️ <em>이 제품은 <strong>출시 전 개발 단계 샘플</strong>이라, 여러분의 의견이 실제 최종 제품에 직접 반영됩니다.</em><br><br>' +
-      '기존 구킨 사용자분이든 처음이신 분이든 모두 환영해요. 편하게 10분만 이야기 나눠주실 수 있을까요?<br><br>' +
+      '구킨은 이미 베트남에서 <strong>마스크팩을 판매 중</strong>이고, 이번에 <strong>새로운 워시오프팩</strong>을 개발하고 있어요.<br><br>' +
+      '오늘은 여러분의 <strong>피부 상태와 워시오프팩에 대한 생각</strong>을 듣고, 제품 개발에 반영하려고 해요.<br><br>' +
+      '⚠️ <em>워시오프팩을 <strong>써보셨든, 안 써보셨든</strong> 모두 환영합니다. 샘플 후기가 아닌, 여러분의 솔직한 의견이 중요해요.</em><br><br>' +
+      '약 10분 편하게 이야기 나눠주실 수 있을까요?<br><br>' +
       '준비되셨으면 "네"라고 답해주세요!'
   },
 
@@ -36,14 +38,16 @@ const I18N = {
     send_button: 'Send',
     typing: 'Elin is typing...',
     language_badge: '🇬🇧 English',
-    pre_launch_notice: '⚠️ Pre-launch product feedback interview',
+    pre_launch_notice: '⚠️ Market research for new product development',
+    summary_loading: 'Great job! 😊 I\'m organizing your valuable insights now. Please wait a moment ✨',
+    summary_ready: 'Your summary is ready. That\'s the end of our interview today. Thank you 🙏',
 
     greeting:
       'Hello! I\'m <strong>Elin (Korean name: Yeon-jin Kim)</strong>, the <strong>GOOKIN Brand Manager at YEO</strong>. 🌿<br><br>' +
-      'GOOKIN already sells its <strong>mask packs in Vietnam</strong>, and we\'ve recently introduced our <strong>skincare line</strong> as well.<br><br>' +
-      'Today I\'d love to hear your thoughts on our upcoming <strong>GOOKIN Wash-off Pack</strong>.<br><br>' +
-      '⚠️ <em>This is a <strong>pre-launch development sample</strong>, so your feedback will directly shape the final product.</em><br><br>' +
-      'Whether you\'ve used GOOKIN before or this is your first time, you\'re very welcome. Can we chat for about 10 minutes?<br><br>' +
+      'GOOKIN already sells <strong>mask packs in Vietnam</strong>, and we\'re now developing a <strong>new wash-off pack</strong>.<br><br>' +
+      'Today, I\'d like to hear about <strong>your skin condition and thoughts on wash-off packs</strong> to help shape the product development.<br><br>' +
+      '⚠️ <em>Whether or not you\'ve tried wash-off packs before, everyone is welcome. This is NOT a sample review — we value your honest opinions.</em><br><br>' +
+      'Can we chat for about 10 minutes?<br><br>' +
       'When ready, please reply "Yes"!'
   },
 
@@ -58,14 +62,16 @@ const I18N = {
     send_button: 'Gửi',
     typing: 'Elin đang nhập...',
     language_badge: '🇻🇳 Tiếng Việt',
-    pre_launch_notice: '⚠️ Phỏng vấn phản hồi sản phẩm trước khi ra mắt',
+    pre_launch_notice: '⚠️ Nghiên cứu thị trường phát triển sản phẩm mới',
+    summary_loading: 'Bạn đã làm rất tốt! 😊 Tôi đang tổng hợp những ý kiến quý giá của bạn. Vui lòng đợi một chút ✨',
+    summary_ready: 'Bản tóm tắt đã sẵn sàng. Đây là kết thúc buổi phỏng vấn hôm nay. Cảm ơn bạn 🙏',
 
     greeting:
       'Xin chào! Tôi là <strong>Elin (tên tiếng Hàn: Kim Yeon-jin)</strong>, <strong>Quản lý thương hiệu GOOKIN tại YEO</strong>. 🌿<br><br>' +
-      'GOOKIN hiện đang bán <strong>mặt nạ giấy tại Việt Nam</strong>, và gần đây chúng tôi cũng vừa ra mắt <strong>dòng skincare</strong> mới.<br><br>' +
-      'Hôm nay, tôi muốn lắng nghe ý kiến của bạn về <strong>Mặt nạ rửa trôi GOOKIN</strong> sắp ra mắt.<br><br>' +
-      '⚠️ <em>Đây là <strong>mẫu phát triển trước khi ra mắt</strong>, nên phản hồi của bạn sẽ ảnh hưởng trực tiếp đến sản phẩm cuối cùng.</em><br><br>' +
-      'Dù bạn đã sử dụng GOOKIN trước đây hay lần đầu biết đến, chúng tôi đều rất hoan nghênh. Chúng ta có thể trò chuyện khoảng 10 phút không?<br><br>' +
+      'GOOKIN hiện đang bán <strong>mặt nạ giấy tại Việt Nam</strong>, và hiện đang phát triển <strong>mặt nạ rửa trôi mới</strong>.<br><br>' +
+      'Hôm nay, tôi muốn nghe về <strong>tình trạng da và suy nghĩ của bạn về mặt nạ rửa trôi</strong> để phản ánh vào việc phát triển sản phẩm.<br><br>' +
+      '⚠️ <em>Dù bạn đã từng dùng mặt nạ rửa trôi hay chưa, tất cả đều được hoan nghênh. Đây KHÔNG phải là đánh giá mẫu — ý kiến thật của bạn mới quan trọng.</em><br><br>' +
+      'Chúng ta có thể trò chuyện khoảng 10 phút không?<br><br>' +
       'Khi sẵn sàng, hãy trả lời "Vâng"!'
   }
 };
