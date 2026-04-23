@@ -519,8 +519,26 @@ if (window.__YEO_CHAT_LOADED__) {
       const firstImp = Array.isArray(prod.first_impression_keywords) ? prod.first_impression_keywords : [];
       const immediate = Array.isArray(prod.immediate_effect) ? prod.immediate_effect : [];
 
-      const priceVnd = parseInt(com.acceptable_price_vnd) || 0;
-      const priceKrw = priceVnd ? Math.round(priceVnd / 18.7) : 0;
+      // 가격 단위 스마트 감지 (KRW가 VND 필드에 잘못 들어간 경우 자동 교정)
+      const krwRaw = parseInt(com.acceptable_price_krw) || 0;
+      const vndRaw = parseInt(com.acceptable_price_vnd) || 0;
+      const KRW_TO_VND = 18.7;
+      const UNIT_THRESHOLD = 50000;
+      let priceKrw = 0;
+      let priceVnd = 0;
+      if (krwRaw > 0) {
+        priceKrw = krwRaw;
+        priceVnd = vndRaw > 0 ? vndRaw : Math.round(krwRaw * KRW_TO_VND);
+      } else if (vndRaw > 0) {
+        if (vndRaw < UNIT_THRESHOLD) {
+          // 단위 오염: KRW가 VND 필드에 들어옴
+          priceKrw = vndRaw;
+          priceVnd = Math.round(vndRaw * KRW_TO_VND);
+        } else {
+          priceKrw = Math.round(vndRaw / KRW_TO_VND);
+          priceVnd = vndRaw;
+        }
+      }
 
       const profileLine = [profile.age_group, profile.gender, profile.location, profile.skin_type]
                           .filter(function (x) { return x; }).join(' · ');
