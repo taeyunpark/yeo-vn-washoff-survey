@@ -229,7 +229,9 @@ if (window.__YEO_CHAT_LOADED__) {
 
         if (data.interview_complete) {
           isCompleted = true;
-          lastSummaryCard = data.summary_card || null;
+          // Summary Card: 서버가 제공하면 사용, 없으면 final_json에서 자체 생성
+          lastSummaryCard = data.summary_card
+                         || (data.final_json ? buildSummaryCardFromFinalJson(data.final_json) : null);
 
           // UX 개선: 창 닫지 않도록 안내 + 로딩 멘트
           const i18n = (typeof getI18n === 'function') ? getI18n(currentLang) : null;
@@ -500,6 +502,56 @@ if (window.__YEO_CHAT_LOADED__) {
              '<div class="bar-label">' + label + '</div>' +
              '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
              '<div class="bar-value">' + v + '/10</div></div>';
+    }
+
+    // Summary Card Fallback: 서버가 summary_card를 안 주면 final_json에서 직접 구성
+    function buildSummaryCardFromFinalJson(fj) {
+      if (!fj) return null;
+      const profile = fj.profile || {};
+      const prod = fj.product_evaluation || {};
+      const com = fj.commercial_signal || {};
+      const openEnd = fj.open_end_feedback || {};
+
+      const concerns = Array.isArray(profile.concerns) ? profile.concerns : [];
+      const firstImp = Array.isArray(prod.first_impression_keywords) ? prod.first_impression_keywords : [];
+      const immediate = Array.isArray(prod.immediate_effect) ? prod.immediate_effect : [];
+
+      const priceVnd = parseInt(com.acceptable_price_vnd) || 0;
+      const priceKrw = priceVnd ? Math.round(priceVnd / 18.7) : 0;
+
+      const profileLine = [profile.age_group, profile.gender, profile.location, profile.skin_type]
+                          .filter(function (x) { return x; }).join(' · ');
+
+      return {
+        profile_line: profileLine,
+        persona: prod.texture_persona || '',
+        skin_insight: openEnd.unspoken_insight || prod.hidden_driver || '',
+        troubles: concerns.slice(0, 3),
+        condition_score: '',
+        texture_spec: {
+          viscosity: prod.spreadability_score || 0,
+          spreadability: prod.spreadability_score || 0,
+          adhesion: '',
+          rinse: prod.water_rinse_count || 0
+        },
+        finish_summary: {
+          preferred: firstImp.slice(0, 3),
+          deal_breaker: prod.single_improvement_request || ''
+        },
+        scrub_summary: {
+          wanted: prod.granular_tolerance || '',
+          reference: '',
+          particle_um: ''
+        },
+        scent_summary: prod.scent_comment || '',
+        top3_priorities: immediate.slice(0, 3),
+        commercial_summary: {
+          price_krw: priceKrw,
+          price_vnd: priceVnd,
+          nps: com.nps_score || '',
+          repurchase: com.repurchase_intent || ''
+        }
+      };
     }
 
     function translateScent(strategy, lang) {
