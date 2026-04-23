@@ -115,6 +115,68 @@ SYSTEM_PROMPT = """# ROLE & IDENTITY (절대 변경 금지)
 6. 총 인터뷰 시간 10분 이내 목표.
 7. 유도 질문 금지.
 
+# QUESTION FORMATTING RULES (절대 준수 — 일관성 유지)
+⚠️ 모든 질문 출력은 아래 규칙을 엄격히 따르세요. 매 턴마다 포맷을 바꾸지 마세요.
+
+## 선택지 제시 규칙
+- 선택지가 있는 질문은 항상 **알파벳(A, B, C, D)** 형식으로 통일합니다.
+- ❌ 금지: 번호(1. 2. 3.), 불릿(•), 하이픈(-) 혼용
+- ✅ 올바른 예:
+  ```
+  워시오프팩 사용 경험이 있으신가요?
+
+  A. 지금도 정기적으로 사용해요
+  B. 가끔 사용하는 편이에요
+  C. 예전엔 썼는데 지금은 안 써요
+  D. 거의 사용해본 적이 없어요
+  ```
+
+## 복수 개방형 질문 규칙
+- 한 번에 2~3개 개방형 질문을 할 경우 항상 **번호(1, 2, 3)** 형식으로 통일합니다.
+- 각 번호 앞에 반드시 빈 줄을 두고, 번호 뒤는 한 칸 띄우기.
+- ✅ 올바른 예:
+  ```
+  몇 가지만 더 여쭤볼게요.
+
+  1. 피부 고민으로 특히 신경 쓰이는 게 있으신가요?
+  2. 하루 중 에어컨 있는 공간에서 몇 시간 정도 계신가요?
+  3. 출퇴근은 주로 어떻게 하시나요?
+  ```
+
+## 예시 제시 규칙
+- 질문 내 예시는 괄호 안에 쉼표로 나열합니다.
+- ❌ 금지: `예:` 뒤에 불릿(•)이나 줄바꿈 리스트 사용
+- ✅ 올바른 예: "(예: 서울, 하노이, 호치민)"
+
+## 들여쓰기 규칙
+- 모든 질문·선택지·번호는 **왼쪽 정렬**. 들여쓰기 하지 않습니다.
+- 단락 구분은 빈 줄 1줄로만 표현합니다.
+
+# PRICE / CURRENCY HANDLING (매우 중요)
+가격 답변 수집 시 반드시 응답자가 말한 단위를 그대로 존중하고 확인하세요.
+
+## 단위 확인 원칙
+- 응답자가 "15,900"이라고만 답하면 단위가 모호합니다. 반드시 되물어 확정하세요.
+- ✅ "15,900원(KRW)이 맞으신가요? 아니면 15,900동(VND)을 말씀하신 건가요?"
+- 한국에 거주하는 응답자: KRW로 해석하되 반드시 한 번 확인.
+- 베트남에 거주하는 응답자: VND로 해석하되 반드시 한 번 확인.
+
+## FINAL_JSON 저장 규칙
+- `commercial_signal.acceptable_price_vnd` 필드는 **반드시 VND 단위**로만 저장.
+- 응답자가 KRW로 답하면, VND로 환산해서 저장 (1 KRW ≈ 18.7 VND).
+  - 예: 응답자 "15,900원" → `acceptable_price_vnd: 297330` (15900 × 18.7)
+- 응답자가 VND로 답하면 그대로 저장.
+- KRW 원본 값은 별도로 `commercial_signal.acceptable_price_krw` 필드에도 저장.
+
+# CURRENT PRODUCT vs NEW GOOKIN PRODUCT (답변 혼동 금지)
+응답자의 답변이 "현재 사용 제품 평가"인지 "구킨 신제품에 원하는 것"인지 반드시 구분하세요.
+
+## 구분 원칙
+- 현재 제품(미릴 등)의 불만족 점 = `product_evaluation.single_improvement_request`
+- 구킨 신제품에 기대하는 것 = `open_end_feedback.brand_suggestion` 또는 `product_evaluation.hidden_driver`
+- "바꿀 게 없다" 같은 답은 **현재 제품에 대한 것인지, 구킨에 원하는 것인지** 질문 맥락에서 판단.
+- 애매하면 반드시 되물어 확정한 후 기록.
+
 # INTERVIEW STAGES
 
 ## STAGE 0. 프로파일 수집 (2분)
@@ -442,6 +504,9 @@ def _flatten_for_summary_sheet(data):
     immediate = prod.get('immediate_effect', []) or []
     next_day = prod.get('next_day_effect', []) or []
 
+    # 가격 단위 스마트 감지 (KRW/VND 오염 방지)
+    price_krw, price_vnd = _resolve_price_units(com)
+
     return {
         # 메타
         'session_id': data.get('tester_id', ''),
@@ -483,8 +548,8 @@ def _flatten_for_summary_sheet(data):
         'scrub_particle_um': '',
 
         # 상업 신호
-        'price_krw': '',
-        'price_vnd': com.get('acceptable_price_vnd', ''),
+        'price_krw': price_krw,
+        'price_vnd': price_vnd,
         'nps_score': com.get('nps_score', ''),
         'nps_category': com.get('nps_category', ''),
         'repurchase_intent': com.get('repurchase_intent', ''),
@@ -581,6 +646,54 @@ def save_conversation_batch(tester_id, messages, final_reply, language):
         print(f'Conversation batch failed: {e}')
 
 
+# ===== Price Unit Resolver: KRW/VND 스마트 감지 + 환산 =====
+def _resolve_price_units(commercial):
+    """
+    FINAL_JSON의 commercial_signal에서 가격 필드를 읽어 KRW/VND 양쪽 값 반환.
+
+    우선순위:
+    1. acceptable_price_krw가 있으면 KRW로 신뢰 → VND 역산
+    2. acceptable_price_vnd만 있으면:
+       - 값이 50,000 이상 → 정상 VND
+       - 값이 50,000 미만 → KRW를 VND 필드에 잘못 넣은 경우 (오염) → KRW로 간주하고 VND 역산
+    3. 둘 다 없으면 (0, 0) 반환
+
+    예시:
+    - com = {acceptable_price_vnd: 15900}  → (15900 KRW, 297330 VND)  [오염 감지]
+    - com = {acceptable_price_vnd: 297330} → (15900 KRW, 297330 VND)  [정상 VND]
+    - com = {acceptable_price_krw: 15900, acceptable_price_vnd: 297330} → (15900, 297330)
+    """
+    KRW_TO_VND = 18.7
+    UNIT_THRESHOLD = 50000  # VND 5만원(≈ KRW 2700원) 미만이면 KRW로 간주
+
+    krw_raw = commercial.get('acceptable_price_krw', 0) or 0
+    vnd_raw = commercial.get('acceptable_price_vnd', 0) or 0
+
+    try:
+        krw_val = int(krw_raw) if krw_raw else 0
+        vnd_val = int(vnd_raw) if vnd_raw else 0
+    except Exception:
+        return (0, 0)
+
+    # Case 1: KRW 원본이 있음
+    if krw_val > 0:
+        if vnd_val == 0:
+            vnd_val = int(krw_val * KRW_TO_VND)
+        return (krw_val, vnd_val)
+
+    # Case 2: VND만 있음 - 단위 오염 감지
+    if vnd_val > 0:
+        if vnd_val < UNIT_THRESHOLD:
+            # 단위 오염: KRW를 VND 필드에 잘못 넣음
+            return (vnd_val, int(vnd_val * KRW_TO_VND))
+        else:
+            # 정상 VND
+            return (int(vnd_val / KRW_TO_VND), vnd_val)
+
+    # Case 3: 둘 다 없음
+    return (0, 0)
+
+
 # ===== Summary Card Builder: 완료 화면용 =====
 def _build_summary_card(final_json):
     """chat.js renderSummaryCard()가 사용할 Summary Card 데이터 구성"""
@@ -606,11 +719,9 @@ def _build_summary_card(final_json):
     location = profile.get('location', '')
     skin = profile.get('skin_type', '')
 
-    price_vnd = com.get('acceptable_price_vnd', 0) or 0
-    try:
-        price_krw = int(int(price_vnd) / 18.7) if price_vnd else 0
-    except Exception:
-        price_krw = 0
+    # 가격 처리: KRW 원본이 있으면 우선 사용, 없으면 VND에서 역산
+    # + 단위 오염 감지: acceptable_price_vnd 값이 비정상적으로 작으면(5만 미만) KRW로 간주
+    price_krw, price_vnd = _resolve_price_units(com)
 
     return {
         'profile_line': f"{age} {gender} · {location} · {skin}".strip(' ·'),
@@ -772,6 +883,9 @@ def save_product_spec(data):
         immediate = prod.get('immediate_effect', []) or []
         first_imp = prod.get('first_impression_keywords', []) or []
 
+        # 가격 단위 스마트 감지 (KRW/VND 오염 방지)
+        target_price_krw, target_price_vnd = _resolve_price_units(com)
+
         target_persona = f"{profile.get('age_group', '?')} {profile.get('gender', '?')} / {profile.get('skin_type', '?')}"
 
         flat_data = {
@@ -799,8 +913,8 @@ def save_product_spec(data):
             'scent_strategy': prod.get('scent_comment', ''),
 
             # 가격
-            'target_price_krw': '',
-            'target_price_vnd': com.get('acceptable_price_vnd', ''),
+            'target_price_krw': target_price_krw,
+            'target_price_vnd': target_price_vnd,
 
             # CVR
             'cvr_primary_risk': prod.get('adverse_reaction', ''),
@@ -851,6 +965,13 @@ def notify_slack(data):
         product_eval = data.get('product_evaluation', {})
         track = data.get('track', 'N/A')
 
+        # 가격 단위 스마트 감지 (KRW/VND 병기 표시)
+        sl_price_krw, sl_price_vnd = _resolve_price_units(commercial)
+        if sl_price_krw or sl_price_vnd:
+            price_text = f"{sl_price_krw:,} KRW ≈ {sl_price_vnd:,} VND"
+        else:
+            price_text = "-"
+
         # Slack message (Block Kit)
         message = {
             'text': f'🎉 새 인터뷰 완료: {tester_id}',
@@ -870,7 +991,7 @@ def notify_slack(data):
                         {'type': 'mrkdwn', 'text': f'*Skin Type:*\n{profile.get("skin_type", "-")}'},
                         {'type': 'mrkdwn', 'text': f'*Repurchase:*\n{commercial.get("repurchase_intent", "-")}'},
                         {'type': 'mrkdwn', 'text': f'*NPS Score:*\n{commercial.get("nps_score", "-")}'},
-                        {'type': 'mrkdwn', 'text': f'*Price (VND):*\n{commercial.get("acceptable_price_vnd", "-")}'},
+                        {'type': 'mrkdwn', 'text': f'*Price:*\n{price_text}'},
                         {'type': 'mrkdwn', 'text': f'*Texture Type:*\n{product_eval.get("texture_persona", "-")}'},
                         {'type': 'mrkdwn', 'text': f'*Effect Score:*\n{product_eval.get("effect_satisfaction_score", "-")}/10'},
                     ]
