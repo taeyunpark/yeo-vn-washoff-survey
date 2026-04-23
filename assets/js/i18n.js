@@ -8,7 +8,7 @@ const I18N = {
     header_title: 'GOOKIN × YEO Research',
     header_subtitle: '구킨 워시오프팩 개발 인터뷰',
     researcher_name: 'Elin (김연진)',
-    researcher_role: 'YEO 리서치 담당',
+    researcher_role: '구킨(GOOKIN) 브랜드 매니저',
     avatar_letter: 'E',
     placeholder: '답변을 입력하세요...',
     send_button: '보내기',
@@ -17,10 +17,11 @@ const I18N = {
     pre_launch_notice: '⚠️ 출시 전 개발 단계 샘플 의견 인터뷰',
 
     greeting:
-      '안녕하세요! 저는 YEO의 리서치 담당 <strong>Elin (한국 이름: 김연진)</strong>입니다. 🌿<br><br>' +
-      '오늘은 저희가 개발 중인 K-뷰티 브랜드 <strong>구킨(GOOKIN)의 워시오프팩</strong>에 대한 의견을 듣고자 해요.<br><br>' +
-      '⚠️ <em>이 제품은 아직 <strong>출시 전 개발 단계 샘플</strong>이라, 여러분의 의견이 실제 최종 제품에 반영됩니다.</em><br><br>' +
-      '실물 샘플을 써보셨든, 아직 안 써보셨든 상관없어요. 편하게 10분만 이야기 나눠주실 수 있을까요?<br><br>' +
+      '안녕하세요! 저는 YEO의 <strong>구킨(GOOKIN) 브랜드 매니저 Elin (한국 이름: 김연진)</strong>입니다. 🌿<br><br>' +
+      '구킨은 이미 베트남에서 <strong>마스크팩을 판매 중</strong>이고, 최근에는 <strong>스킨케어 라인</strong>도 새롭게 선보이고 있어요.<br><br>' +
+      '오늘은 저희가 준비 중인 <strong>구킨 워시오프팩</strong>에 대한 의견을 듣고자 해요.<br><br>' +
+      '⚠️ <em>이 제품은 <strong>출시 전 개발 단계 샘플</strong>이라, 여러분의 의견이 실제 최종 제품에 직접 반영됩니다.</em><br><br>' +
+      '기존 구킨 사용자분이든 처음이신 분이든 모두 환영해요. 편하게 10분만 이야기 나눠주실 수 있을까요?<br><br>' +
       '준비되셨으면 "네"라고 답해주세요!'
   },
 
@@ -29,7 +30,7 @@ const I18N = {
     header_title: 'GOOKIN × YEO Research',
     header_subtitle: 'GOOKIN Wash-off Pack Development Interview',
     researcher_name: 'Elin (Yeon-jin Kim)',
-    researcher_role: 'Researcher, YEO',
+    researcher_role: 'GOOKIN Brand Manager, YEO',
     avatar_letter: 'E',
     placeholder: 'Type your message...',
     send_button: 'Send',
@@ -38,10 +39,11 @@ const I18N = {
     pre_launch_notice: '⚠️ Pre-launch product feedback interview',
 
     greeting:
-      'Hello! I\'m <strong>Elin (Korean name: Yeon-jin Kim)</strong>, a researcher at YEO. 🌿<br><br>' +
-      'Today I\'d love to hear your thoughts on <strong>GOOKIN\'s Wash-off Pack</strong> — a K-Beauty product we\'re currently developing.<br><br>' +
+      'Hello! I\'m <strong>Elin (Korean name: Yeon-jin Kim)</strong>, the <strong>GOOKIN Brand Manager at YEO</strong>. 🌿<br><br>' +
+      'GOOKIN already sells its <strong>mask packs in Vietnam</strong>, and we\'ve recently introduced our <strong>skincare line</strong> as well.<br><br>' +
+      'Today I\'d love to hear your thoughts on our upcoming <strong>GOOKIN Wash-off Pack</strong>.<br><br>' +
       '⚠️ <em>This is a <strong>pre-launch development sample</strong>, so your feedback will directly shape the final product.</em><br><br>' +
-      'Whether you\'ve tried the physical sample or not, please share your honest thoughts. Can we chat for about 10 minutes?<br><br>' +
+      'Whether you\'ve used GOOKIN before or this is your first time, you\'re very welcome. Can we chat for about 10 minutes?<br><br>' +
       'When ready, please reply "Yes"!'
   },
 
@@ -50,7 +52,7 @@ const I18N = {
     header_title: 'GOOKIN × YEO Research',
     header_subtitle: 'Phỏng vấn phát triển Mặt nạ rửa trôi GOOKIN',
     researcher_name: 'Elin (Kim Yeon-jin)',
-    researcher_role: 'Nghiên cứu viên, YEO',
+    researcher_role: 'Quản lý thương hiệu GOOKIN, YEO',
     avatar_letter: 'E',
     placeholder: 'Nhập câu trả lời...',
     send_button: 'Gửi',
@@ -59,10 +61,11 @@ const I18N = {
     pre_launch_notice: '⚠️ Phỏng vấn phản hồi sản phẩm trước khi ra mắt',
 
     greeting:
-      'Xin chào! Tôi là <strong>Elin (tên tiếng Hàn: Kim Yeon-jin)</strong>, nghiên cứu viên tại YEO. 🌿<br><br>' +
-      'Hôm nay, tôi muốn lắng nghe ý kiến của bạn về <strong>Mặt nạ rửa trôi GOOKIN</strong> — sản phẩm K-Beauty chúng tôi đang phát triển.<br><br>' +
+      'Xin chào! Tôi là <strong>Elin (tên tiếng Hàn: Kim Yeon-jin)</strong>, <strong>Quản lý thương hiệu GOOKIN tại YEO</strong>. 🌿<br><br>' +
+      'GOOKIN hiện đang bán <strong>mặt nạ giấy tại Việt Nam</strong>, và gần đây chúng tôi cũng vừa ra mắt <strong>dòng skincare</strong> mới.<br><br>' +
+      'Hôm nay, tôi muốn lắng nghe ý kiến của bạn về <strong>Mặt nạ rửa trôi GOOKIN</strong> sắp ra mắt.<br><br>' +
       '⚠️ <em>Đây là <strong>mẫu phát triển trước khi ra mắt</strong>, nên phản hồi của bạn sẽ ảnh hưởng trực tiếp đến sản phẩm cuối cùng.</em><br><br>' +
-      'Dù đã thử mẫu thật hay chưa, hãy thoải mái chia sẻ. Chúng ta có thể trò chuyện khoảng 10 phút không?<br><br>' +
+      'Dù bạn đã sử dụng GOOKIN trước đây hay lần đầu biết đến, chúng tôi đều rất hoan nghênh. Chúng ta có thể trò chuyện khoảng 10 phút không?<br><br>' +
       'Khi sẵn sàng, hãy trả lời "Vâng"!'
   }
 };
