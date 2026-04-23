@@ -267,55 +267,78 @@ if (window.__YEO_CHAT_LOADED__) {
       // HTML 특수문자 escape 먼저
       let html = escapeHtml(text);
 
-      // 코드블록 (```로 감싸진 부분은 일단 보존)
       // 볼드 **text** → <strong>
       html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
       // 이탤릭 *text* (볼드와 구분)
       html = html.replace(/(?<![*])\*([^*\n]+)\*(?![*])/g, '<em>$1</em>');
 
-      // 숫자 리스트 (1. 2. 3.)
-      // 각 라인 처리를 위해 한 번 split
+      // 리스트 파싱: 빈 줄이 중간에 있어도 연속된 리스트로 인식.
+      // Claude가 쓴 번호(N)를 <li value="N">으로 전달해 "1,1,1" 버그 방지.
       const lines = html.split('\n');
       const out = [];
-      let inList = false;
+      let listType = null;  // 'ol' | 'ul' | null
+      let pendingBlank = false;
+
+      function closeList() {
+        if (listType === 'ol') out.push('</ol>');
+        else if (listType === 'ul') out.push('</ul>');
+        listType = null;
+      }
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        // 숫자. 으로 시작하는 라인
-        if (/^\s*\d+\.\s+/.test(line)) {
-          if (!inList) {
+
+        // 빈 줄: 리스트 중이면 일단 보류(다음 줄이 또 리스트면 같은 리스트로 이어감)
+        if (/^\s*$/.test(line)) {
+          if (listType) {
+            pendingBlank = true;
+          } else {
+            out.push(line);
+          }
+          continue;
+        }
+
+        // 숫자 리스트 항목: "1. " "2. " 등
+        const olMatch = line.match(/^\s*(\d+)\.\s+(.*)$/);
+        if (olMatch) {
+          if (listType === 'ul') closeList();
+          if (!listType) {
             out.push('<ol class="chat-ol">');
-            inList = true;
+            listType = 'ol';
           }
-          const item = line.replace(/^\s*\d+\.\s+/, '');
-          out.push('<li>' + item + '</li>');
+          // Claude가 쓴 번호 그대로 value로 세팅 (1,1,1 버그 방지)
+          const num = parseInt(olMatch[1], 10) || 1;
+          out.push('<li value="' + num + '">' + olMatch[2] + '</li>');
+          pendingBlank = false;
+          continue;
         }
-        // - 또는 • 로 시작하는 라인
-        else if (/^\s*[-•]\s+/.test(line)) {
-          if (!inList) {
+
+        // 불릿 리스트 항목: "- " "• "
+        const ulMatch = line.match(/^\s*[-•]\s+(.*)$/);
+        if (ulMatch) {
+          if (listType === 'ol') closeList();
+          if (!listType) {
             out.push('<ul class="chat-ul">');
-            inList = true;
+            listType = 'ul';
           }
-          const item = line.replace(/^\s*[-•]\s+/, '');
-          out.push('<li>' + item + '</li>');
+          out.push('<li>' + ulMatch[1] + '</li>');
+          pendingBlank = false;
+          continue;
         }
-        else {
-          if (inList) {
-            // 이전이 리스트였으면 닫기
-            const lastOpen = out.slice().reverse().find(function (l) { return l === '<ol class="chat-ol">' || l === '<ul class="chat-ul">'; });
-            if (lastOpen === '<ol class="chat-ol">') out.push('</ol>');
-            else out.push('</ul>');
-            inList = false;
+
+        // 그 외 일반 라인: 현재 리스트 닫고 평문 추가
+        if (listType) {
+          closeList();
+          if (pendingBlank) {
+            out.push('');
+            pendingBlank = false;
           }
-          out.push(line);
         }
+        out.push(line);
       }
-      if (inList) {
-        // 마지막 리스트 닫기
-        const lastOpen = out.slice().reverse().find(function (l) { return l === '<ol class="chat-ol">' || l === '<ul class="chat-ul">'; });
-        if (lastOpen === '<ol class="chat-ol">') out.push('</ol>');
-        else out.push('</ul>');
-      }
+
+      // 문서 끝: 리스트 열려있으면 닫기
+      if (listType) closeList();
 
       // 라인을 다시 합치되 리스트가 아닌 일반 줄바꿈만 <br>로
       let joined = '';
