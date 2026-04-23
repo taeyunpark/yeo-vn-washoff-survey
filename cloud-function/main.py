@@ -219,7 +219,47 @@ Q5. 제형 무의식 3층 프로빙:
   - Layer 1: 비유 (음식/물건/색깔)
   - Layer 2: 강제 비교 (바셀린 vs 물 vs 요거트)
   - Layer 3: 무의식 단서 (기분 좋은 순간, 바꾸고 싶은 것)
-Q6. 재구매 의향 + 가격 (VND) + NPS
+Q6. 재구매 의향 + 가격 (KRW/VND) + 조건부 NPS ⭐
+
+## Q6 조건부 NPS 프로토콜 (절대 준수)
+⚠️ 구킨 워시오프팩은 **아직 출시 전** 제품입니다. 응답자는 실제 제품을 써본 적이 없습니다.
+따라서 "구킨 제품을 추천하시겠어요?" 같은 질문은 논리적 모순입니다. 반드시 다음 3단계로 진행하세요.
+
+### 1단계: 가격 질문
+먼저 가격 수용도만 단독 질문.
+예: "만약 이런 조건의 제품이 출시된다면, 얼마 정도가 적당하다고 생각하세요? (원화 또는 동화로)"
+
+### 2단계: 조건 요약 (매우 중요)
+NPS 질문 직전에 반드시 지금까지 응답자가 말한 핵심 선호 조건을 2~4개로 정리해서 복기하세요.
+포함 항목: 제형, 주 효능, 향, 가격대, 추가 선호 중 응답자가 강조한 것.
+
+예시:
+"지금까지 말씀해 주신 내용을 정리해 보면,
+- 요거트처럼 적당한 점도감
+- 보습력이 강화된 효과
+- 무향
+- 15,900원대 가격
+이런 제품을 원하시는 거죠? 제가 맞게 이해했나요?"
+
+응답자가 "맞다"고 확인하거나 수정해주면 그 확정된 조건으로 넘어갑니다.
+
+### 3단계: 조건부 NPS
+반드시 조건이 충족된다는 가정을 명시적으로 말한 후 질문하세요.
+
+예시:
+"그럼 **만약 이 모든 조건을 충족하는 구킨 워시오프팩이 출시된다면**, 주변 분들에게 추천하고 싶은 정도를 0~10점으로 말씀해 주실 수 있을까요?
+(0 = 전혀 추천 안 함, 10 = 매우 적극 추천)"
+
+### 4단계: 추천 근거 수집
+NPS 점수를 받은 후, 반드시 이유를 한 번 되묻습니다.
+- 7점 미만: "아쉬운 점이 있으셨나요? 어떤 부분이 더 보완되면 점수가 올라갈까요?"
+- 7~8점: "어떤 점이 가장 매력적이셨어요? 반대로 조금 더 보완되면 좋겠다 하는 건요?"
+- 9~10점: "가장 인상적인 매력 포인트가 뭐였을까요?"
+
+### ❌ 금지 — 조건 요약 없이 바로 NPS
+"구킨 제품 추천하시겠어요?"만 단독으로 묻는 것은 절대 금지.
+이렇게 물으면 응답자는 "쓰지도 않은 제품을 어떻게 추천하냐"고 혼란을 겪습니다.
+
 Q7. Open-End: 못다한 말, 브랜드 제안, 인터뷰 메타 피드백
 
 ## STAGE 3. 마무리 인사
@@ -304,10 +344,13 @@ Q1~Q7 모두 완료되면 응답 끝에 다음 형식으로 JSON 출력:
   "commercial_signal": {
     "repurchase_intent": "yes|conditional|no|undecided",
     "repurchase_condition": "...",
+    "acceptable_price_krw": <number>,
     "acceptable_price_vnd": <number>,
     "monthly_purchase_qty": <number>,
     "nps_score": <0-10>,
     "nps_category": "Promoter|Passive|Detractor",
+    "nps_conditional_context": "...",
+    "nps_reason": "...",
     "recommendation_target": "..."
   },
   "open_end_feedback": {
@@ -331,6 +374,23 @@ Q1~Q7 모두 완료되면 응답 끝에 다음 형식으로 JSON 출력:
 </FINAL_JSON>
 
 JSON은 응답자에게 절대 보이지 않도록 <FINAL_JSON> 태그로 감쌉니다. 클라이언트가 태그를 제거합니다.
+
+# COMMERCIAL_SIGNAL 필드 작성 가이드 (특히 중요)
+
+- `acceptable_price_krw`: 응답자가 답한 KRW 가격 원본. VND로 답했다면 0.
+- `acceptable_price_vnd`: 응답자가 답한 VND 가격 원본. KRW로 답했다면 KRW × 18.7로 환산한 값.
+  예: 응답자 "15,900원" → `acceptable_price_krw: 15900`, `acceptable_price_vnd: 297330`
+  예: 응답자 "300,000 VND" → `acceptable_price_krw: 0`, `acceptable_price_vnd: 300000`
+
+- `nps_score`: 조건부 NPS 점수 (0~10).
+- `nps_conditional_context`: NPS 질문 시 응답자와 합의한 조건 요약.
+  예: "요거트 점도 + 보습 강화 + 무향 + 15,900원대"
+- `nps_reason`: 응답자가 그 점수를 준 이유.
+  예: "보습력만 확실하면 기꺼이 추천하겠다"
+- `recommendation_target`: 누구에게 추천할지.
+  예: "여자친구", "같은 복합성 피부 남성 지인"
+
+⚠️ `nps_conditional_context`가 비어 있으면 NPS 데이터는 무의미합니다. 반드시 채우세요.
 
 # SAFETY
 1. 민감 정보(실명, 연락처) 요청 금지.
@@ -582,9 +642,31 @@ def _flatten_for_summary_sheet(data):
         'cvr_element_category': prod.get('texture_persona', ''),
         'must_address_claim': prod.get('hidden_driver', ''),
 
-        # Open-End
-        'open_end_comment': open_end.get('unspoken_insight', '') or open_end.get('brand_suggestion', '')
+        # Open-End (NPS 맥락 + 근거 + 자유 의견 통합)
+        'open_end_comment': _compose_open_end_text(com, open_end)
     }
+
+
+def _compose_open_end_text(com, open_end):
+    """open_end_comment 컬럼에 NPS 조건부 맥락 + 근거 + 자유 의견을 통합 기록"""
+    parts = []
+    ctx = (com.get('nps_conditional_context') or '').strip()
+    reason = (com.get('nps_reason') or '').strip()
+    target = (com.get('recommendation_target') or '').strip()
+    unspoken = (open_end.get('unspoken_insight') or '').strip()
+    suggestion = (open_end.get('brand_suggestion') or '').strip()
+
+    if ctx:
+        parts.append(f"[NPS 조건] {ctx}")
+    if reason:
+        parts.append(f"[NPS 근거] {reason}")
+    if target:
+        parts.append(f"[추천 대상] {target}")
+    if unspoken:
+        parts.append(f"[자유 의견] {unspoken}")
+    elif suggestion:
+        parts.append(f"[브랜드 제안] {suggestion}")
+    return ' / '.join(parts)
 
 
 # ===== Turn Log: 매 턴마다 대화 저장 (Legacy, 현재 미사용) =====
@@ -768,6 +850,9 @@ def _build_summary_card(final_json):
             'price_krw': price_krw,
             'price_vnd': price_vnd,
             'nps': com.get('nps_score', ''),
+            'nps_context': com.get('nps_conditional_context', ''),
+            'nps_reason': com.get('nps_reason', ''),
+            'recommendation_target': com.get('recommendation_target', ''),
             'repurchase': com.get('repurchase_intent', '')
         }
     }
