@@ -355,21 +355,122 @@ def extract_final_json(text):
 
 # ===== Google Sheets Integration =====
 def save_to_sheets(data):
-    """Apps Script Webhook으로 Sheets에 저장"""
+    """Apps Script Webhook v2.4 호환 - interview_summary 이벤트로 전송"""
     if not SHEETS_WEBHOOK_URL:
         print('SHEETS_WEBHOOK_URL not configured, skipping save')
         return
 
     try:
+        # FINAL_JSON을 Responses_Summary 시트 스키마로 flatten
+        flat_data = _flatten_for_summary_sheet(data)
+
+        # Apps Script v2.4 계약 형식: {event_type, data}
+        payload = {
+            'event_type': 'interview_summary',
+            'data': flat_data
+        }
+
         response = requests.post(
             SHEETS_WEBHOOK_URL,
-            json=data,
+            json=payload,
             timeout=10
         )
         response.raise_for_status()
-        print(f'Sheets save OK: {data.get("tester_id")}')
+
+        # Apps Script 응답 확인 (200 OK이지만 error JSON일 수 있음)
+        try:
+            result = response.json()
+            if result.get('error'):
+                print(f'Sheets save error (200 OK but Apps Script error): {result.get("error")}')
+                return
+            print(f'Sheets save OK: {data.get("tester_id")} row={result.get("row")}')
+        except Exception:
+            print(f'Sheets save OK (no JSON body): {data.get("tester_id")}')
     except Exception as e:
         print(f'Sheets save failed: {e}')
+
+
+def _flatten_for_summary_sheet(data):
+    """
+    FINAL_JSON 중첩 구조를 Responses_Summary 시트의 평면 컬럼 스키마로 변환.
+    Apps Script COLUMNS_SUMMARY와 키 이름 일치.
+    """
+    profile = data.get('profile', {}) or {}
+    pre = data.get('pre_screening', {}) or {}
+    prod = data.get('product_evaluation', {}) or {}
+    com = data.get('commercial_signal', {}) or {}
+    brand = data.get('brand_psychology', {}) or {}
+    open_end = data.get('open_end_feedback', {}) or {}
+
+    concerns = profile.get('concerns', []) or []
+    troubles_top3 = ', '.join(concerns[:3]) if isinstance(concerns, list) else str(concerns)
+
+    first_imp = prod.get('first_impression_keywords', []) or []
+    first_imp_str = ', '.join(first_imp) if isinstance(first_imp, list) else str(first_imp)
+
+    immediate = prod.get('immediate_effect', []) or []
+    next_day = prod.get('next_day_effect', []) or []
+
+    return {
+        # 메타
+        'session_id': data.get('tester_id', ''),
+        'timestamp_end': data.get('interview_date', ''),
+        'total_turns': data.get('duration_min', 0),
+        'user_turns': '',
+        'language': data.get('language_used', ''),
+
+        # 프로필
+        'age_group': profile.get('age_group', ''),
+        'gender': profile.get('gender', ''),
+        'region': profile.get('location', ''),
+
+        # 피부
+        'self_skin_type': profile.get('skin_type', ''),
+        'actual_skin_type': profile.get('skin_type', ''),
+        'persona_id': '',
+        'persona_name_kor': '',
+        'troubles_top3': troubles_top3,
+        'condition_score': '',
+        'sensitivity_level': profile.get('sensitivity_grade', ''),
+
+        # 트랙
+        'track': data.get('track', ''),
+
+        # 제형
+        'viscosity': prod.get('viscosity_preference', ''),
+        'spreadability': prod.get('spreadability_score', ''),
+        'adhesion': '',
+        'rinse_count': prod.get('water_rinse_count', ''),
+
+        # 마감/향
+        'finish_preferred': first_imp_str,
+        'finish_deal_breaker': prod.get('single_improvement_request', ''),
+        'scent_strategy': prod.get('scent_comment', ''),
+
+        # 스크럽
+        'scrub_wanted': prod.get('granular_tolerance', ''),
+        'scrub_particle_um': '',
+
+        # 상업 신호
+        'price_krw': '',
+        'price_vnd': com.get('acceptable_price_vnd', ''),
+        'nps_score': com.get('nps_score', ''),
+        'nps_category': com.get('nps_category', ''),
+        'repurchase_intent': com.get('repurchase_intent', ''),
+
+        # 우선순위 (immediate_effect 상위 3개로 대체)
+        'priority_1': immediate[0] if len(immediate) > 0 else '',
+        'priority_2': immediate[1] if len(immediate) > 1 else '',
+        'priority_3': immediate[2] if len(immediate) > 2 else '',
+
+        # CVR 리스크
+        'cvr_primary_risk': prod.get('adverse_reaction', ''),
+        'cvr_element_category': prod.get('texture_persona', ''),
+        'must_address_claim': prod.get('hidden_driver', ''),
+
+        # Open-End
+        'open_end_comment': open_end.get('unspoken_insight', '') or open_end.get('brand_suggestion', '')
+    }
 
 
 # ===== Slack Notification =====
