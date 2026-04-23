@@ -211,9 +211,14 @@ if (window.__YEO_CHAT_LOADED__) {
         hideTyping();
 
         let msg = data.reply || '';
+        // <FINAL_JSON>...</FINAL_JSON> 완전 태그 제거
         msg = msg.replace(/<FINAL_JSON>[\s\S]*?<\/FINAL_JSON>/gi, '').trim();
+        // 닫는 태그가 없이 중간에 잘린 경우 (토큰 한도 등) - 시작 태그 이후 모든 내용 제거
+        msg = msg.replace(/<FINAL_JSON>[\s\S]*$/gi, '').trim();
         // 혹시 남은 태그 제거
         msg = msg.replace(/<\/?FINAL_JSON>/gi, '').trim();
+        // JSON 조각이 그대로 노출된 경우 방어 (중괄호 + 따옴표 패턴)
+        msg = msg.replace(/\{\s*"tester_id"[\s\S]*$/gi, '').trim();
         // 끝부분의 --- 구분선 제거
         msg = msg.replace(/\n---+\s*$/g, '').trim();
 
@@ -225,7 +230,21 @@ if (window.__YEO_CHAT_LOADED__) {
         if (data.interview_complete) {
           isCompleted = true;
           lastSummaryCard = data.summary_card || null;
-          setTimeout(showCompletionScreen, 2500);
+
+          // UX 개선: 창 닫지 않도록 안내 + 로딩 멘트
+          const i18n = (typeof getI18n === 'function') ? getI18n(currentLang) : null;
+          const loadingMsg = (i18n && i18n.summary_loading) || '고생 많으셨어요! 😊 지금 소중한 의견을 정리하고 있어요. 잠시만 기다려 주세요 ✨';
+          const finalMsg = (i18n && i18n.summary_ready) || '요약본이 준비되었습니다. 여기까지가 오늘 인터뷰의 마무리입니다. 감사합니다 🙏';
+
+          setTimeout(function () {
+            appendMessage('assistant', loadingMsg, false);
+          }, 800);
+
+          setTimeout(function () {
+            appendMessage('assistant', finalMsg, false);
+          }, 2800);
+
+          setTimeout(showCompletionScreen, 4500);
         }
       } catch (err) {
         hideTyping();
