@@ -507,7 +507,22 @@ if (window.__YEO_CHAT_LOADED__) {
           }
           html += '<br>';
         }
-        if (commercial.nps !== undefined) html += wt.label_nps + ': ' + commercial.nps + '/10<br>';
+        // 조건부 NPS 맥락 표시
+        if (commercial.nps_context) {
+          html += '<div style="background:#FFF8E1;border-left:3px solid #FFA726;padding:8px 10px;border-radius:6px;margin:8px 0;font-size:12px;line-height:1.5;color:#5D4037;">' +
+                  '<strong>조건:</strong> ' + commercial.nps_context + '</div>';
+        }
+        if (commercial.nps !== undefined && commercial.nps !== '') {
+          html += wt.label_nps + ': ' + commercial.nps + '/10';
+          if (commercial.nps_context) html += ' <span style="color:#888;font-size:11px;">(조건 충족 시)</span>';
+          html += '<br>';
+        }
+        if (commercial.nps_reason) {
+          html += '<span style="color:#555;font-size:12px;">근거: ' + commercial.nps_reason + '</span><br>';
+        }
+        if (commercial.recommendation_target) {
+          html += '<span style="color:#555;font-size:12px;">추천 대상: ' + commercial.recommendation_target + '</span><br>';
+        }
         if (commercial.repurchase) html += wt.label_repurchase + ': ' + commercial.repurchase;
         html += '</div></div>';
       }
@@ -593,6 +608,9 @@ if (window.__YEO_CHAT_LOADED__) {
           price_krw: priceKrw,
           price_vnd: priceVnd,
           nps: com.nps_score || '',
+          nps_context: com.nps_conditional_context || '',
+          nps_reason: com.nps_reason || '',
+          recommendation_target: com.recommendation_target || '',
           repurchase: com.repurchase_intent || ''
         }
       };
@@ -664,11 +682,20 @@ if (window.__YEO_CHAT_LOADED__) {
         text += '\n';
       }
 
-      if (commercial.price_krw) {
-        text += '[COMMERCIAL]\n';
-        text += 'Expected Price: ' + commercial.price_krw.toLocaleString() + ' KRW\n';
-        if (commercial.nps !== undefined) text += 'NPS: ' + commercial.nps + '/10\n';
-        if (commercial.repurchase) text += 'Repurchase: ' + commercial.repurchase + '\n';
+      if (commercial.price_krw || commercial.nps !== undefined) {
+        text += '[COMMERCIAL SIGNAL]\n';
+        if (commercial.price_krw) {
+          text += 'Expected Price: ' + commercial.price_krw.toLocaleString() + ' KRW';
+          if (commercial.price_vnd) text += ' (≈ ' + commercial.price_vnd.toLocaleString() + ' VND)';
+          text += '\n';
+        }
+        if (commercial.nps_context) text += 'NPS Condition: ' + commercial.nps_context + '\n';
+        if (commercial.nps !== undefined && commercial.nps !== '') {
+          text += 'NPS (Conditional): ' + commercial.nps + '/10\n';
+        }
+        if (commercial.nps_reason) text += 'NPS Reason: ' + commercial.nps_reason + '\n';
+        if (commercial.recommendation_target) text += 'Recommend To: ' + commercial.recommendation_target + '\n';
+        if (commercial.repurchase) text += 'Repurchase Intent: ' + commercial.repurchase + '\n';
       }
 
       text += '\n━━━━━━━━━━━━━━━━━━━━━━━━━\nThank you for participating in GOOKIN research.\n';
