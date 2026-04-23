@@ -198,14 +198,19 @@ if (window.__YEO_CHAT_LOADED__) {
         const resp = await fetch(ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: sessionId, messages: messages })
+          body: JSON.stringify({
+            session_id: sessionId,
+            tester_id: testerId,
+            language: currentLang,
+            messages: messages
+          })
         });
 
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
         hideTyping();
 
-        let msg = data.message || '';
+        let msg = data.reply || '';
         msg = msg.replace(/<FINAL_JSON>[\s\S]*?<\/FINAL_JSON>/gi, '').trim();
         // 혹시 남은 태그 제거
         msg = msg.replace(/<\/?FINAL_JSON>/gi, '').trim();
@@ -217,7 +222,7 @@ if (window.__YEO_CHAT_LOADED__) {
         appendMessage('assistant', htmlMsg, true);
         messages.push({ role: 'assistant', content: msg });
 
-        if (data.completed) {
+        if (data.interview_complete) {
           isCompleted = true;
           lastSummaryCard = data.summary_card || null;
           setTimeout(showCompletionScreen, 2500);
