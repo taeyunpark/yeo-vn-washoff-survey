@@ -304,7 +304,7 @@ def survey_proxy(request):
         # ⚡ 응답 속도 최적화: 매 턴마다의 Turn Log 저장을 제거.
         # 완료 시점에 전체 대화 로그를 Batch로 일괄 전송합니다 (아래 완료 블록).
 
-        # ===== If complete, save to Sheets + Notify Slack =====
+        # ===== If complete, dispatch background tasks + return fast =====
         if interview_complete:
             # tester_id, duration 보강
             final_json['tester_id'] = final_json.get('tester_id') or tester_id
@@ -312,28 +312,22 @@ def survey_proxy(request):
             final_json['duration_min'] = final_json.get('duration_min') or duration_min
             final_json['language_used'] = final_json.get('language_used') or language
 
-            # Google Sheets에 저장 (4개 이벤트)
-            save_to_sheets(final_json)
-            save_insights_deep(final_json)
-            save_product_spec(final_json)
-
-            # Conversation Log: 전체 대화 Batch 저장 (완료 시 일괄 전송)
-            clean_reply_for_log = re.sub(r'<FINAL_JSON>[\s\S]*?</FINAL_JSON>', '', reply_text).strip()
-            clean_reply_for_log = re.sub(r'<FINAL_JSON>[\s\S]*$', '', clean_reply_for_log).strip()
-            save_conversation_batch(
-                tester_id=final_json['tester_id'],
-                messages=messages,
-                final_reply=clean_reply_for_log,
-                language=language
-            )
-
-            # Slack 알림
-            notify_slack(final_json)
-
-            # Summary Card 생성 (chat.js renderSummaryCard용)
+            # Summary Card는 브라우저 응답에 포함되어야 하므로 즉시 생성 (빠름)
             final_json['summary_card'] = _build_summary_card(final_json)
 
-        # Response
+            # 무거운 작업은 백그라운드로 분리 - 응답 속도 최적화
+            clean_reply_for_log = re.sub(r'<FINAL_JSON>[\s\S]*?</FINAL_JSON>', '', reply_text).strip()
+            clean_reply_for_log = re.sub(r'<FINAL_JSON>[\s\S]*$', '', clean_reply_for_log).strip()
+
+            import threading
+            bg_thread = threading.Thread(
+                target=_dispatch_completion_tasks,
+                args=(final_json, messages, clean_reply_for_log, language),
+                daemon=False
+            )
+            bg_thread.start()
+
+        # Response (백그라운드 Thread 대기하지 않고 즉시 반환)
         response_body = {
             'reply': reply_text,  # 클라이언트가 <FINAL_JSON> 태그 제거
             'interview_complete': interview_complete,
@@ -648,6 +642,49 @@ def _build_summary_card(final_json):
             'repurchase': com.get('repurchase_intent', '')
         }
     }
+
+
+# ===== Background Dispatcher: 완료 후 모든 무거운 작업을 Thread로 처리 =====
+def _dispatch_completion_tasks(final_json, messages, clean_reply, language):
+    """
+    브라우저 응답 후 백그라운드에서 실행:
+    - Sheets 4개 시트 저장 (Summary, Insights, Product Spec, Conversation)
+    - Slack 알림
+    각 작업은 독립적으로 try/except로 감싸서 한 작업 실패해도 다른 작업은 진행.
+    """
+    tester_id = final_json.get('tester_id', 'UNKNOWN')
+
+    try:
+        save_to_sheets(final_json)
+    except Exception as e:
+        print(f'[BG] save_to_sheets failed: {e}')
+
+    try:
+        save_insights_deep(final_json)
+    except Exception as e:
+        print(f'[BG] save_insights_deep failed: {e}')
+
+    try:
+        save_product_spec(final_json)
+    except Exception as e:
+        print(f'[BG] save_product_spec failed: {e}')
+
+    try:
+        save_conversation_batch(
+            tester_id=tester_id,
+            messages=messages,
+            final_reply=clean_reply,
+            language=language
+        )
+    except Exception as e:
+        print(f'[BG] save_conversation_batch failed: {e}')
+
+    try:
+        notify_slack(final_json)
+    except Exception as e:
+        print(f'[BG] notify_slack failed: {e}')
+
+    print(f'[BG] All completion tasks finished for {tester_id}')
 
 
 # ===== Insights Deep: 정성 심화 저장 =====
