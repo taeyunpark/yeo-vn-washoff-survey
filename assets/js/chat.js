@@ -233,20 +233,23 @@ if (window.__YEO_CHAT_LOADED__) {
           lastSummaryCard = data.summary_card
                          || (data.final_json ? buildSummaryCardFromFinalJson(data.final_json) : null);
 
-          // UX 개선: 창 닫지 않도록 안내 + 로딩 멘트
+          // UX 개선: Elin 최종 응답 직후 즉시 "정리 중..." 멘트 표시
           const i18n = (typeof getI18n === 'function') ? getI18n(currentLang) : null;
           const loadingMsg = (i18n && i18n.summary_loading) || '고생 많으셨어요! 😊 지금 소중한 의견을 정리하고 있어요. 잠시만 기다려 주세요 ✨';
           const finalMsg = (i18n && i18n.summary_ready) || '요약본이 준비되었습니다. 여기까지가 오늘 인터뷰의 마무리입니다. 감사합니다 🙏';
 
+          // 즉시 로딩 멘트 (사용자가 침묵 구간을 체감하지 않도록)
           setTimeout(function () {
             appendMessage('assistant', loadingMsg, false);
-          }, 800);
+          }, 300);
 
+          // 1.8초 후 마무리 멘트
           setTimeout(function () {
             appendMessage('assistant', finalMsg, false);
-          }, 2800);
+          }, 1800);
 
-          setTimeout(showCompletionScreen, 4500);
+          // 3.2초 후 요약 화면 (Summary Card는 서버에서 이미 왔으므로 대기 불필요)
+          setTimeout(showCompletionScreen, 3200);
         }
       } catch (err) {
         hideTyping();
