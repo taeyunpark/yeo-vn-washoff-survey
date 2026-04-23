@@ -283,6 +283,38 @@ def survey_proxy(request):
         final_json = extract_final_json(reply_text)
         interview_complete = final_json is not None
 
+        # ===== Conversation Log: 매 턴마다 User + Assistant 저장 =====
+        try:
+            # 마지막 User 메시지 (방금 받은 것)
+            last_user_msg = messages[-1] if messages else None
+            if last_user_msg and last_user_msg.get('role') == 'user':
+                save_turn_log({
+                    'session_id': tester_id,
+                    'turn_no': len(messages),
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'role': 'user',
+                    'speaker_name': 'Tester',
+                    'language': language,
+                    'message_content': last_user_msg.get('content', ''),
+                    'token_count': len(last_user_msg.get('content', ''))
+                })
+
+            # Assistant 응답 저장 (FINAL_JSON 태그 제거한 버전)
+            clean_reply = re.sub(r'<FINAL_JSON>[\s\S]*?</FINAL_JSON>', '', reply_text).strip()
+            clean_reply = re.sub(r'<FINAL_JSON>[\s\S]*$', '', clean_reply).strip()
+            save_turn_log({
+                'session_id': tester_id,
+                'turn_no': len(messages) + 1,
+                'timestamp': datetime.utcnow().isoformat(),
+                'role': 'assistant',
+                'speaker_name': 'Elin',
+                'language': language,
+                'message_content': clean_reply,
+                'token_count': len(clean_reply)
+            })
+        except Exception as log_err:
+            print(f'Turn log error (non-blocking): {log_err}')
+
         # ===== If complete, save to Sheets + Notify Slack =====
         if interview_complete:
             # tester_id, duration 보강
@@ -291,8 +323,10 @@ def survey_proxy(request):
             final_json['duration_min'] = final_json.get('duration_min') or duration_min
             final_json['language_used'] = final_json.get('language_used') or language
 
-            # Google Sheets에 저장
+            # Google Sheets에 저장 (3개 이벤트: Summary + Insights + Product Spec)
             save_to_sheets(final_json)
+            save_insights_deep(final_json)
+            save_product_spec(final_json)
 
             # Slack 알림
             notify_slack(final_json)
@@ -471,6 +505,169 @@ def _flatten_for_summary_sheet(data):
         # Open-End
         'open_end_comment': open_end.get('unspoken_insight', '') or open_end.get('brand_suggestion', '')
     }
+
+
+# ===== Turn Log: 매 턴마다 대화 저장 =====
+def save_turn_log(turn_data):
+    """Conversation_Log 시트에 User/Assistant 턴 저장"""
+    if not SHEETS_WEBHOOK_URL:
+        return
+    try:
+        payload = {'event_type': 'turn_log', 'data': turn_data}
+        response = requests.post(SHEETS_WEBHOOK_URL, json=payload, timeout=10)
+        response.raise_for_status()
+    except Exception as e:
+        print(f'Turn log save failed: {e}')
+
+
+# ===== Insights Deep: 정성 심화 저장 =====
+def save_insights_deep(data):
+    """Insights_Deep 시트에 정성 인사이트 저장"""
+    if not SHEETS_WEBHOOK_URL:
+        return
+    try:
+        prod = data.get('product_evaluation', {}) or {}
+        profile = data.get('profile', {}) or {}
+        pre = data.get('pre_screening', {}) or {}
+        brand = data.get('brand_psychology', {}) or {}
+        probe = data.get('probe_log', {}) or {}
+        open_end = data.get('open_end_feedback', {}) or {}
+
+        concerns = profile.get('concerns', []) or []
+        first_imp = prod.get('first_impression_keywords', []) or []
+        brand_assoc = brand.get('brand_associations', []) or []
+        previous_products = pre.get('previous_products', []) or []
+
+        flat_data = {
+            'session_id': data.get('tester_id', ''),
+            'timestamp': data.get('interview_date', ''),
+            'persona_id': '',
+
+            # 피부 심층
+            'skin_morning_oil_zone': '',
+            'skin_afternoon_cheek': '',
+            'skin_seasonal_variation': '',
+            'skin_trouble_history': ', '.join(concerns) if isinstance(concerns, list) else '',
+            'skin_irritation_history': prod.get('adverse_reaction', ''),
+
+            # 감각
+            'initial_touch_hashtags': ', '.join(first_imp) if isinstance(first_imp, list) else '',
+            'luxury_perception_score': '',
+            'absorption_speed_score': prod.get('spreadability_score', ''),
+            'residue_tolerance': prod.get('granular_tolerance', ''),
+            'use_occasion': profile.get('commute_mode', ''),
+
+            # Finish
+            'finish_hashtags': prod.get('post_wash_feel', ''),
+            'cvr_critical_lever': prod.get('hidden_driver', ''),
+
+            # Scent
+            'scent_signature_family': prod.get('scent_comment', ''),
+
+            # Q5 제형 3층 프로빙
+            'q8_layer1': prod.get('texture_metaphor', ''),
+            'q8_layer2': prod.get('viscosity_preference', ''),
+            'q8_layer3': prod.get('single_improvement_request', ''),
+            'texture_persona': prod.get('texture_persona', ''),
+
+            # 스크럽
+            'scrub_reference': '',
+            'scrub_application_area': '',
+
+            # 경쟁사
+            'competitors_mentioned': _safe_join_competitors(previous_products),
+            'signature_ingredient_json': json.dumps(brand_assoc, ensure_ascii=False) if brand_assoc else '',
+
+            # 카테고리 선호
+            'category_preference': pre.get('category_experience', ''),
+            'md_action_tags': open_end.get('insight_category', '')
+        }
+
+        payload = {'event_type': 'insights_deep', 'data': flat_data}
+        response = requests.post(SHEETS_WEBHOOK_URL, json=payload, timeout=10)
+        response.raise_for_status()
+        print(f'Insights Deep save OK: {data.get("tester_id")}')
+    except Exception as e:
+        print(f'Insights Deep save failed: {e}')
+
+
+# ===== Product Spec: MD용 제조사 RFP =====
+def save_product_spec(data):
+    """Product_Spec_Sheet 시트에 MD 관점 제조사 RFP 정보 저장"""
+    if not SHEETS_WEBHOOK_URL:
+        return
+    try:
+        profile = data.get('profile', {}) or {}
+        prod = data.get('product_evaluation', {}) or {}
+        com = data.get('commercial_signal', {}) or {}
+        open_end = data.get('open_end_feedback', {}) or {}
+
+        immediate = prod.get('immediate_effect', []) or []
+        first_imp = prod.get('first_impression_keywords', []) or []
+
+        target_persona = f"{profile.get('age_group', '?')} {profile.get('gender', '?')} / {profile.get('skin_type', '?')}"
+
+        flat_data = {
+            'session_id': data.get('tester_id', ''),
+            'timestamp': data.get('interview_date', ''),
+            'target_persona': target_persona,
+
+            # 물리 스펙
+            'physical_viscosity': prod.get('viscosity_preference', ''),
+            'physical_spreadability': prod.get('spreadability_score', ''),
+            'physical_absorption_speed': '',
+            'physical_adhesion': '',
+            'physical_rinse_count': prod.get('water_rinse_count', ''),
+
+            # 스크럽
+            'scrub_particle_um': '',
+            'scrub_reference': prod.get('granular_tolerance', ''),
+
+            # 감각
+            'sensory_initial_touch': ', '.join(first_imp) if isinstance(first_imp, list) else '',
+            'sensory_finish': prod.get('post_wash_feel', ''),
+            'sensory_finish_deal_breaker': prod.get('single_improvement_request', ''),
+
+            # 향
+            'scent_strategy': prod.get('scent_comment', ''),
+
+            # 가격
+            'target_price_krw': '',
+            'target_price_vnd': com.get('acceptable_price_vnd', ''),
+
+            # CVR
+            'cvr_primary_risk': prod.get('adverse_reaction', ''),
+            'priority_claim': prod.get('hidden_driver', ''),
+
+            # 마케팅
+            'top3_marketing_hashtags': ', '.join(immediate[:3]) if isinstance(immediate, list) else '',
+            'avoid_ingredients': open_end.get('brand_suggestion', '')
+        }
+
+        payload = {'event_type': 'product_spec', 'data': flat_data}
+        response = requests.post(SHEETS_WEBHOOK_URL, json=payload, timeout=10)
+        response.raise_for_status()
+        print(f'Product Spec save OK: {data.get("tester_id")}')
+    except Exception as e:
+        print(f'Product Spec save failed: {e}')
+
+
+def _safe_join_competitors(previous_products):
+    """previous_products가 str/dict/list 혼재 가능하므로 안전하게 join"""
+    if not previous_products:
+        return ''
+    if isinstance(previous_products, str):
+        return previous_products
+    result = []
+    for item in previous_products:
+        if isinstance(item, str):
+            result.append(item)
+        elif isinstance(item, dict):
+            val = item.get('brand') or item.get('name') or item.get('product_name') or str(item)
+            result.append(str(val))
+        else:
+            result.append(str(item))
+    return ', '.join(result)
 
 
 # ===== Slack Notification =====
